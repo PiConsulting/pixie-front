@@ -12,6 +12,8 @@ const SorteosContent = () => {
     '¡Felicitaciones! Ganaste [item] pasa por el stand 2 a retirar tu premio.',
   )
   const [generated, setGenerated] = useState(false)
+  const [sorteado, setSorteado] = useState(false)
+  const [toast, setToast] = useState({show: false, message: ''})
 
   useEffect(() => {
     if (!file) {
@@ -76,12 +78,15 @@ const SorteosContent = () => {
       console.error('Error guardando en localStorage', err)
     }
 
+    // al generar un nuevo sorteo, resetear flag de "sorteado"
+    setSorteado(false)
     setGenerated(true)
   }
 
   const handleEdit = () => setGenerated(false)
   const [showWinnerModal, setShowWinnerModal] = useState(false)
   const [winnerName, setWinnerName] = useState(null)
+  const [showResortConfirm, setShowResortConfirm] = useState(false)
 
   const sampleAttendees = [
     'Ana López',
@@ -203,15 +208,40 @@ const SorteosContent = () => {
                     </div>
 
                     <div className="flex flex-col items-end gap-2">
-                      <button
-                        onClick={startDraw}
-                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-md font-medium"
-                      >
-                        Sortear
-                      </button>
-                      <button onClick={handleEdit} className="text-sm text-blue-600 underline">
-                        Editar sorteo
-                      </button>
+                      {/* Botón Sortear / Sorteado */}
+                      {!sorteado ? (
+                        <button
+                          onClick={startDraw}
+                          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-150"
+                        >
+                          Sortear
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          aria-disabled="true"
+                          className="bg-gray-200 text-gray-500 px-6 py-3 rounded-md font-medium cursor-not-allowed"
+                        >
+                          Sorteado
+                        </button>
+                      )}
+
+                      {/* Botón Editar / Volver a sortear */}
+                      {!sorteado ? (
+                        <button onClick={handleEdit} className="text-sm text-blue-600 underline">
+                          Editar sorteo
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            // abrir modal de confirmación; el sorteo real se hace solo si confirma
+                            setShowResortConfirm(true)
+                          }}
+                          className="text-sm text-red-600 font-medium hover:text-red-700"
+                        >
+                          Volver a sortear
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -227,7 +257,73 @@ const SorteosContent = () => {
           onClose={() => setShowWinnerModal(false)}
           onRetry={() => startDraw()}
           winnerName={winnerName}
+          productName={productName}
+          onNotify={(notificationText) => {
+            // marcar como sorteado y mostrar toast
+            try {
+              setSorteado(true)
+              setToast({show: true, message: 'Notificación enviada!'})
+              // ocultar toast después de 3s
+              setTimeout(() => setToast({show: false, message: ''}), 3000)
+            } catch (e) {
+              console.error('onNotify parent handler error', e)
+            }
+          }}
         />
+      )}
+
+      {/* Confirmación: Estás por sortear un producto nuevamente */}
+      {showResortConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-lg">
+            <div className="overflow-hidden rounded-t-xl">
+              {/* Imagen decorativa: usar el mismo robot o placeholder */}
+              <div className="h-32 bg-gradient-to-r from-yellow-200 to-white flex items-center justify-center">
+                <img src="/public/sorpresa.png" alt="alerta" className="h-36 object-contain" />
+              </div>
+            </div>
+
+            <div className="p-4 text-center">
+              <h3 className="text-lg font-semibold">Estás por sortear un producto nuevamente</h3>
+              <p className="text-sm text-gray-600 mt-2">
+                El ganador anterior perderá su premio,{' '}
+                <strong>esta acción no se puede deshacer</strong>.
+              </p>
+
+              <div className="mt-6">
+                <button
+                  onClick={() => {
+                    // confirmar: cerrar modal, reactivar flag y ejecutar sorteo
+                    setShowResortConfirm(false)
+                    setSorteado(false)
+                    startDraw()
+                  }}
+                  className="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-md font-medium shadow"
+                >
+                  Volver a sortear
+                </button>
+              </div>
+
+              <div className="mt-4">
+                <button
+                  onClick={() => setShowResortConfirm(false)}
+                  className="text-sm text-gray-700"
+                >
+                  Volver
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast simple bottom-right */}
+      {toast.show && (
+        <div className="fixed top-6 right-6 z-50">
+          <div className="bg-green-600 text-white px-4 py-2 rounded-md shadow-lg border border-green-700">
+            {toast.message}
+          </div>
+        </div>
       )}
     </>
   )
