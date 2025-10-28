@@ -275,7 +275,7 @@ const SorteosContent = () => {
       {/* Confirmación: Estás por sortear un producto nuevamente */}
       {showResortConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-lg">
+          <div className="bg-white rounded-2xl w-full max-w-xl p-6 shadow-lg">
             <div className="overflow-hidden rounded-t-xl">
               {/* Imagen decorativa: usar el mismo robot o placeholder */}
               <div className="h-32 bg-gradient-to-r from-yellow-200 to-white flex items-center justify-center">

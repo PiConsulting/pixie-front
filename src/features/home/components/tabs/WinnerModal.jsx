@@ -51,7 +51,7 @@ const WinnerModal = ({open, onClose, winnerName, onRetry, productName, onNotify}
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-lg">
+      <div className="bg-white rounded-2xl w-full max-w-2xl p-6 shadow-lg">
         {loading ? (
           <div className="flex flex-col items-center gap-4">
             <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center">
