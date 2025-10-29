@@ -5,7 +5,7 @@ const EventoModal = ({isOpen, onClose}) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-      <div className="bg-white rounded-2xl shadow-2xl px-10 py-12 max-w-5xl w-full flex flex-col relative">
+      <div className="bg-white rounded-2xl shadow-2xl px-8 py-10 max-w-4xl w-full flex flex-col relative">
         {/* Botón de cerrar */}
         <button
           onClick={onClose}
