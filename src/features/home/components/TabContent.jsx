@@ -1,22 +1,22 @@
-import AsistentesContent from "./tabs/AsistentesContent"
-import SorteosContent from "./tabs/SorteosContent"
-import AnunciosContent from "./tabs/AnunciosContent"
+import AsistentesContent from './tabs/AsistentesContent'
+import SorteosContent from './tabs/SorteosContent'
+import AnunciosContent from './tabs/AnunciosContent'
 
-const TabContent = ({ activeTab }) => {
+const TabContent = ({activeTab}) => {
   const renderContent = () => {
     switch (activeTab) {
-      case "asistentes":
+      case 'asistentes':
         return <AsistentesContent />
-      case "sorteos":
+      case 'sorteos':
         return <SorteosContent />
-      case "anuncios":
+      case 'anuncios':
         return <AnunciosContent />
       default:
         return <SorteosContent />
     }
   }
 
-  return <div className="content-card">{renderContent()}</div>
+  return <div className="">{renderContent()}</div>
 }
 
 export default TabContent
