@@ -185,7 +185,7 @@ const SorteosContent = () => {
             </div>
             <button
               onClick={() => setShowIntro(false)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-medium shadow transition-colors duration-200"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-2 rounded-xl font-medium shadow transition-colors duration-200"
             >
               Crear sorteo
             </button>
@@ -239,7 +239,9 @@ const SorteosContent = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Participan</label>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Participan
+                        </label>
                         <select
                           value={participants}
                           onChange={(e) => setParticipants(e.target.value)}
@@ -288,7 +290,10 @@ const SorteosContent = () => {
                               stored.push(item)
                               localStorage.setItem('sorteos_pending', JSON.stringify(stored))
                             } catch (err) {
-                              console.error('Error guardando en localStorage al añadir producto', err)
+                              console.error(
+                                'Error guardando en localStorage al añadir producto',
+                                err,
+                              )
                             }
                             // reset inputs for next product
                             setProductName('')
