@@ -172,7 +172,7 @@ const SorteosContent = () => {
   return (
     <>
       <div className="w-full">
-        <div className="bg-white rounded-2xl shadow-lg p-6">
+        <div className="bg-white rounded-2xl shadow-lg p-6 h-[400px] overflow-auto">
           {!generated ? (
             <form onSubmit={handleGenerate}>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
@@ -227,8 +227,7 @@ const SorteosContent = () => {
                         className="mt-1 block w-1/2 border border-gray-300 rounded px-3 py-2"
                       >
                         <option>Todos los asistentes</option>
-                        <option>Developers</option>
-                        <option>Administracion</option>
+                        <option>Asistentes acreditados</option>
                       </select>
                     </div>
                     <div className="flex flex-col items-end gap-2">
