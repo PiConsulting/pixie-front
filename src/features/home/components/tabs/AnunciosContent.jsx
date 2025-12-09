@@ -105,8 +105,7 @@ const AnunciosContent = () => {
                       className="block w-full border border-gray-200 rounded-md p-2 text-sm"
                     >
                       <option value="all">Todos los asistentes</option>
-                      <option value="speakers">Developers</option>
-                      <option value="vip">Administracion</option>
+                      <option value="speakers">Asistentes acreditados</option>
                     </select>
                   </div>
 
