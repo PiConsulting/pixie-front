@@ -28,12 +28,12 @@ const AnunciosContent = () => {
   return (
     <div className="w-full">
       <div className="bg-white rounded-2xl shadow-lg p-6 h-[400px] flex flex-col">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch flex-1 min-h-0">
           {/* Left column - historial */}
-          <div className="md:col-span-1 h-full">
-            <div className="bg-white rounded-xl shadow-sm p-4 text-left flex flex-col">
+          <div className="md:col-span-1 h-full min-h-0">
+            <div className="bg-white rounded-xl shadow-sm p-4 text-left flex flex-col h-full">
               <h4 className="text-sm font-semibold text-gray-700 mb-2">Historial</h4>
-              <div className="flex-1 overflow-y-auto max-h-[420px]">
+              <div className="flex-1 overflow-y-auto pr-2 min-h-0">
                 {history.length === 0 ? (
                   <div className="flex-1 flex items-center justify-center">
                     <div className="text-xs pt-20 p-10 text-gray-500 text-center">
@@ -73,7 +73,7 @@ const AnunciosContent = () => {
           </div>
 
           {/* Right column - main panel */}
-          <div className="md:col-span-2 h-full">
+          <div className="md:col-span-2 h-full min-h-0">
             <div className="bg-white rounded-xl shadow-sm p-6 h-full flex flex-col">
               {!isCreating ? (
                 <div className="max-w-2xl w-full text-center mx-auto flex flex-col justify-center h-full">

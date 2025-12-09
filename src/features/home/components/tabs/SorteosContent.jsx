@@ -11,6 +11,7 @@ const SorteosContent = () => {
   const [notification, setNotification] = useState(
     '¡Felicitaciones! Ganaste [item] pasa por el stand 2 a retirar tu premio.',
   )
+  const [showIntro, setShowIntro] = useState(true)
   const [generated, setGenerated] = useState(false)
   const [sorteado, setSorteado] = useState(false)
   const [toast, setToast] = useState({show: false, message: ''})
@@ -172,278 +173,297 @@ const SorteosContent = () => {
   return (
     <>
       <div className="w-full">
-        <div className="bg-white rounded-2xl shadow-lg p-6 h-[400px] overflow-auto">
-          {!generated ? (
-            <form onSubmit={handleGenerate}>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                <div
-                  className="col-span-1 bg-gray-100 rounded-lg h-64 flex items-center justify-center border-2 border-dashed border-gray-300 text-gray-500 cursor-pointer overflow-hidden"
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={onDrop}
-                  onClick={openFilePicker}
-                  role="button"
-                  aria-label="Subir imagen premio"
-                >
-                  {preview ? (
-                    <img
-                      src={preview}
-                      alt="Preview"
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  ) : (
-                    <div className="text-center px-4">
-                      <p className="font-medium">Subí o arrastra tu archivo acá</p>
-                      <p className="text-sm text-gray-500 mt-2">PNG, JPG, GIF — hasta 5MB</p>
-                    </div>
-                  )}
-                  <input
-                    ref={inputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={onSelect}
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <div className="flex flex-col gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Nombre del producto
-                      </label>
-                      <input
-                        value={productName}
-                        onChange={(e) => setProductName(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded px-3 py-2"
-                        placeholder="Ingresa el nombre del producto a sortear"
+        {showIntro ? (
+          <div className="bg-white rounded-2xl shadow-lg p-8 h-[400px] flex flex-col items-center justify-center text-center gap-4">
+            <div className="max-w-xl">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-2">
+                Armá un sorteo en segundos
+              </h3>
+              <p className="text-gray-600">
+                Elegí a los participantes y dejá que la plataforma elija al ganador en un instante.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowIntro(false)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-medium shadow transition-colors duration-200"
+            >
+              Crear sorteo
+            </button>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-lg p-6 h-[400px] overflow-auto">
+            {!generated ? (
+              <form onSubmit={handleGenerate}>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                  <div
+                    className="col-span-1 bg-gray-100 rounded-lg h-64 flex items-center justify-center border-2 border-dashed border-gray-300 text-gray-500 cursor-pointer overflow-hidden"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={onDrop}
+                    onClick={openFilePicker}
+                    role="button"
+                    aria-label="Subir imagen premio"
+                  >
+                    {preview ? (
+                      <img
+                        src={preview}
+                        alt="Preview"
+                        className="max-h-full max-w-full object-contain"
                       />
-                    </div>
+                    ) : (
+                      <div className="text-center px-4">
+                        <p className="font-medium">Subí o arrastra tu archivo acá</p>
+                        <p className="text-sm text-gray-500 mt-2">PNG, JPG, GIF — hasta 5MB</p>
+                      </div>
+                    )}
+                    <input
+                      ref={inputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={onSelect}
+                    />
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Participan</label>
-                      <select
-                        value={participants}
-                        onChange={(e) => setParticipants(e.target.value)}
-                        className="mt-1 block w-1/2 border border-gray-300 rounded px-3 py-2"
-                      >
-                        <option>Todos los asistentes</option>
-                        <option>Asistentes acreditados</option>
-                      </select>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <button
-                        type="submit"
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
-                      >
-                        Generar sorteo
-                      </button>
+                  <div className="col-span-2">
+                    <div className="flex flex-col gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Nombre del producto
+                        </label>
+                        <input
+                          value={productName}
+                          onChange={(e) => setProductName(e.target.value)}
+                          className="mt-1 block w-full border border-gray-300 rounded px-3 py-2"
+                          placeholder="Ingresa el nombre del producto a sortear"
+                        />
+                      </div>
 
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          // Añadir producto temporal a la lista (convierte imagen a dataURL si existe)
-                          if (!productName.trim())
-                            return alert('Por favor ingresá el nombre del producto.')
-                          let imageData = null
-                          try {
-                            imageData = await fileToDataUrl(file)
-                          } catch (err) {
-                            console.error('Error convirtiendo imagen al añadir producto:', err)
-                          }
-                          const id = Date.now()
-                          const item = {
-                            id,
-                            productName,
-                            participants,
-                            notification,
-                            // prefer data URL preview (stable) if available
-                            preview: imageData || preview,
-                            image: imageData,
-                          }
-                          setProducts((p) => [...p, item])
-                          // guardar inmediatamente en localStorage (pendientes)
-                          try {
-                            const stored = JSON.parse(
-                              localStorage.getItem('sorteos_pending') || '[]',
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Participan</label>
+                        <select
+                          value={participants}
+                          onChange={(e) => setParticipants(e.target.value)}
+                          className="mt-1 block w-1/2 border border-gray-300 rounded px-3 py-2"
+                        >
+                          <option>Todos los asistentes</option>
+                          <option>Asistentes acreditados</option>
+                        </select>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <button
+                          type="submit"
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
+                        >
+                          Generar sorteo
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            // Añadir producto temporal a la lista (convierte imagen a dataURL si existe)
+                            if (!productName.trim())
+                              return alert('Por favor ingresá el nombre del producto.')
+                            let imageData = null
+                            try {
+                              imageData = await fileToDataUrl(file)
+                            } catch (err) {
+                              console.error('Error convirtiendo imagen al añadir producto:', err)
+                            }
+                            const id = Date.now()
+                            const item = {
+                              id,
+                              productName,
+                              participants,
+                              notification,
+                              // prefer data URL preview (stable) if available
+                              preview: imageData || preview,
+                              image: imageData,
+                            }
+                            setProducts((p) => [...p, item])
+                            // guardar inmediatamente en localStorage (pendientes)
+                            try {
+                              const stored = JSON.parse(
+                                localStorage.getItem('sorteos_pending') || '[]',
+                              )
+                              stored.push(item)
+                              localStorage.setItem('sorteos_pending', JSON.stringify(stored))
+                            } catch (err) {
+                              console.error('Error guardando en localStorage al añadir producto', err)
+                            }
+                            // reset inputs for next product
+                            setProductName('')
+                            setParticipants('Todos los asistentes')
+                            setNotification(
+                              '¡Felicitaciones! Ganaste [item] pasa por el stand 2 a retirar tu premio.',
                             )
-                            stored.push(item)
-                            localStorage.setItem('sorteos_pending', JSON.stringify(stored))
-                          } catch (err) {
-                            console.error('Error guardando en localStorage al añadir producto', err)
-                          }
-                          // reset inputs for next product
-                          setProductName('')
-                          setParticipants('Todos los asistentes')
-                          setNotification(
-                            '¡Felicitaciones! Ganaste [item] pasa por el stand 2 a retirar tu premio.',
-                          )
-                          setFile(null)
-                        }}
-                        className="mt-2 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700"
-                      >
-                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </span>
-                        <span className="text-sm">Añadir otro producto</span>
-                      </button>
+                            setFile(null)
+                          }}
+                          className="mt-2 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700"
+                        >
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </span>
+                          <span className="text-sm">Añadir otro producto</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </form>
-          ) : (
-            <div className="p-4">
-              {/* lista de productos agregados (si hay) */}
-              {products.length > 0 && (
-                <div className="mb-4 flex gap-3 items-center overflow-x-auto">
-                  {products.map((p, i) => (
-                    <div
-                      key={p.id}
-                      onClick={() => setSelectedProductIndex(i)}
-                      className={`flex items-center gap-2 bg-gray-50 border ${
-                        i === selectedProductIndex ? 'border-blue-400' : 'border-gray-200'
-                      } rounded px-3 py-2 cursor-pointer`}
-                    >
-                      <div className="w-12 h-12 bg-white rounded overflow-hidden flex items-center justify-center">
-                        {p.image || p.preview ? (
-                          // prefer stored data URL (image) else object URL (preview)
-                          <img
-                            src={p.image || p.preview}
-                            alt={p.productName}
-                            className="object-contain w-full h-full"
-                          />
-                        ) : (
-                          <div className="text-xs text-gray-400">No img</div>
-                        )}
+              </form>
+            ) : (
+              <div className="p-4">
+                {/* lista de productos agregados (si hay) */}
+                {products.length > 0 && (
+                  <div className="mb-4 flex gap-3 items-center overflow-x-auto">
+                    {products.map((p, i) => (
+                      <div
+                        key={p.id}
+                        onClick={() => setSelectedProductIndex(i)}
+                        className={`flex items-center gap-2 bg-gray-50 border ${
+                          i === selectedProductIndex ? 'border-blue-400' : 'border-gray-200'
+                        } rounded px-3 py-2 cursor-pointer`}
+                      >
+                        <div className="w-12 h-12 bg-white rounded overflow-hidden flex items-center justify-center">
+                          {p.image || p.preview ? (
+                            // prefer stored data URL (image) else object URL (preview)
+                            <img
+                              src={p.image || p.preview}
+                              alt={p.productName}
+                              className="object-contain w-full h-full"
+                            />
+                          ) : (
+                            <div className="text-xs text-gray-400">No img</div>
+                          )}
+                        </div>
+                        <div className="text-sm font-medium">{p.productName}</div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setProducts((arr) => {
+                              const newArr = arr.filter((x) => x.id !== p.id)
+                              try {
+                                localStorage.setItem('sorteos_pending', JSON.stringify(newArr))
+                              } catch (err) {
+                                console.error('Error actualizando pendientes al eliminar', err)
+                              }
+                              return newArr
+                            })
+                            // if we removed the selected, adjust selected index
+                            setSelectedProductIndex((old) => {
+                              const newLen = Math.max(0, products.length - 1)
+                              if (newLen === 0) return 0
+                              return Math.min(old, newLen - 1)
+                            })
+                          }}
+                          className="text-xs text-red-500 ml-2"
+                        >
+                          Eliminar
+                        </button>
                       </div>
-                      <div className="text-sm font-medium">{p.productName}</div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setProducts((arr) => {
-                            const newArr = arr.filter((x) => x.id !== p.id)
-                            try {
-                              localStorage.setItem('sorteos_pending', JSON.stringify(newArr))
-                            } catch (err) {
-                              console.error('Error actualizando pendientes al eliminar', err)
-                            }
-                            return newArr
-                          })
-                          // if we removed the selected, adjust selected index
-                          setSelectedProductIndex((old) => {
-                            const newLen = Math.max(0, products.length - 1)
-                            if (newLen === 0) return 0
-                            return Math.min(old, newLen - 1)
-                          })
-                        }}
-                        className="text-xs text-red-500 ml-2"
-                      >
-                        Eliminar
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="flex items-start gap-6">
-                <div className="w-64 h-64 bg-white rounded-lg flex items-center justify-center border-4 border-blue-300 overflow-hidden">
-                  {displayImage ? (
-                    <img
-                      src={displayImage}
-                      alt="Producto"
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  ) : (
-                    <div className="text-gray-400">No hay imagen</div>
-                  )}
-                </div>
-
-                {/* Carousel controls for selected product */}
-                {products.length > 1 && (
-                  <div className="flex flex-col items-center mt-2">
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={prevProduct}
-                        className="px-3 py-1 bg-white border rounded hover:bg-gray-50"
-                      >
-                        Anterior
-                      </button>
-                      <div className="text-sm text-gray-600">
-                        {selectedProductIndex + 1} / {products.length}
-                      </div>
-                      <button
-                        onClick={nextProduct}
-                        className="px-3 py-1 bg-white border rounded hover:bg-gray-50"
-                      >
-                        Siguiente
-                      </button>
-                    </div>
+                    ))}
                   </div>
                 )}
+                <div className="flex items-start gap-6">
+                  <div className="w-64 h-64 bg-white rounded-lg flex items-center justify-center border-4 border-blue-300 overflow-hidden">
+                    {displayImage ? (
+                      <img
+                        src={displayImage}
+                        alt="Producto"
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    ) : (
+                      <div className="text-gray-400">No hay imagen</div>
+                    )}
+                  </div>
 
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm text-gray-500">Producto</div>
-                      <div className="text-base font-semibold text-gray-900">
-                        {displayProductName}
+                  {/* Carousel controls for selected product */}
+                  {products.length > 1 && (
+                    <div className="flex flex-col items-center mt-2">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={prevProduct}
+                          className="px-3 py-1 bg-white border rounded hover:bg-gray-50"
+                        >
+                          Anterior
+                        </button>
+                        <div className="text-sm text-gray-600">
+                          {selectedProductIndex + 1} / {products.length}
+                        </div>
+                        <button
+                          onClick={nextProduct}
+                          className="px-3 py-1 bg-white border rounded hover:bg-gray-50"
+                        >
+                          Siguiente
+                        </button>
                       </div>
-                      <div className="text-sm text-gray-500 mt-3">Participan</div>
-                      <div className="text-sm text-gray-700">{participants}</div>
                     </div>
+                  )}
 
-                    <div className="flex flex-col items-end gap-2">
-                      {/* Botón Sortear / Sorteado */}
-                      {!sorteado ? (
-                        <button
-                          onClick={startDraw}
-                          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-150"
-                        >
-                          Sortear
-                        </button>
-                      ) : (
-                        <button
-                          disabled
-                          aria-disabled="true"
-                          className="bg-gray-200 text-gray-500 px-6 py-3 rounded-md font-medium cursor-not-allowed"
-                        >
-                          Sorteado
-                        </button>
-                      )}
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-gray-500">Producto</div>
+                        <div className="text-base font-semibold text-gray-900">
+                          {displayProductName}
+                        </div>
+                        <div className="text-sm text-gray-500 mt-3">Participan</div>
+                        <div className="text-sm text-gray-700">{participants}</div>
+                      </div>
 
-                      {/* Botón Editar / Volver a sortear */}
-                      {!sorteado ? (
-                        <button onClick={handleEdit} className="text-sm text-blue-600 underline">
-                          Editar sorteo
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            // abrir modal de confirmación; el sorteo real se hace solo si confirma
-                            setShowResortConfirm(true)
-                          }}
-                          className="text-sm text-red-600 font-medium hover:text-red-700"
-                        >
-                          Volver a sortear
-                        </button>
-                      )}
+                      <div className="flex flex-col items-end gap-2">
+                        {/* Botón Sortear / Sorteado */}
+                        {!sorteado ? (
+                          <button
+                            onClick={startDraw}
+                            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-150"
+                          >
+                            Sortear
+                          </button>
+                        ) : (
+                          <button
+                            disabled
+                            aria-disabled="true"
+                            className="bg-gray-200 text-gray-500 px-6 py-3 rounded-md font-medium cursor-not-allowed"
+                          >
+                            Sorteado
+                          </button>
+                        )}
+
+                        {/* Botón Editar / Volver a sortear */}
+                        {!sorteado ? (
+                          <button onClick={handleEdit} className="text-sm text-blue-600 underline">
+                            Editar sorteo
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              // abrir modal de confirmación; el sorteo real se hace solo si confirma
+                              setShowResortConfirm(true)
+                            }}
+                            className="text-sm text-red-600 font-medium hover:text-red-700"
+                          >
+                            Volver a sortear
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       {showWinnerModal && (
