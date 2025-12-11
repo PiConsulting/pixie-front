@@ -185,7 +185,7 @@ const SorteosContent = () => {
             </div>
             <button
               onClick={() => setShowIntro(false)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-2 rounded-xl font-medium shadow transition-colors duration-200"
+              className="m-0 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium shadow transition-colors duration-200"
             >
               Crear sorteo
             </button>
