@@ -169,6 +169,9 @@ const SorteosContent = () => {
       : preview
   const displayProductName =
     products.length > 0 ? products[selectedProductIndex]?.productName : productName
+  const displayParticipants =
+    products.length > 0 ? products[selectedProductIndex]?.participants : participants
+  const currentProduct = products.length > 0 ? products[selectedProductIndex] : null
 
   return (
     <>
@@ -191,7 +194,7 @@ const SorteosContent = () => {
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-lg p-6 h-[400px] overflow-auto">
+          <div className="bg-white rounded-2xl shadow-lg p-6 min-h-[320px] overflow-visible">
             {!generated ? (
               <form onSubmit={handleGenerate}>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
@@ -233,7 +236,7 @@ const SorteosContent = () => {
                         <input
                           value={productName}
                           onChange={(e) => setProductName(e.target.value)}
-                          className="mt-1 block w-full border border-gray-300 rounded px-3 py-2"
+                          className="mt-1 block w-1/2 border border-gray-300 rounded px-3 py-2"
                           placeholder="Ingresa el nombre del producto a sortear"
                         />
                       </div>
@@ -327,60 +330,86 @@ const SorteosContent = () => {
                 </div>
               </form>
             ) : (
-              <div className="p-4">
-                {/* lista de productos agregados (si hay) */}
-                {products.length > 0 && (
-                  <div className="mb-4 flex gap-3 items-center overflow-x-auto">
-                    {products.map((p, i) => (
-                      <div
-                        key={p.id}
-                        onClick={() => setSelectedProductIndex(i)}
-                        className={`flex items-center gap-2 bg-gray-50 border ${
-                          i === selectedProductIndex ? 'border-blue-400' : 'border-gray-200'
-                        } rounded px-3 py-2 cursor-pointer`}
+              <div className="px-4">
+                <div className="relative flex items-center gap-12 overflow-visible w-full min-h-[260px]">
+                  {products.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={prevProduct}
+                      className="absolute left-[-60px] top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-blue-500 text-white flex items-center justify-center shadow hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed z-30"
+                      aria-label="Anterior producto"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        className="h-5 w-5"
                       >
-                        <div className="w-12 h-12 bg-white rounded overflow-hidden flex items-center justify-center">
-                          {p.image || p.preview ? (
-                            // prefer stored data URL (image) else object URL (preview)
-                            <img
-                              src={p.image || p.preview}
-                              alt={p.productName}
-                              className="object-contain w-full h-full"
-                            />
-                          ) : (
-                            <div className="text-xs text-gray-400">No img</div>
-                          )}
-                        </div>
-                        <div className="text-sm font-medium">{p.productName}</div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setProducts((arr) => {
-                              const newArr = arr.filter((x) => x.id !== p.id)
-                              try {
-                                localStorage.setItem('sorteos_pending', JSON.stringify(newArr))
-                              } catch (err) {
-                                console.error('Error actualizando pendientes al eliminar', err)
-                              }
-                              return newArr
-                            })
-                            // if we removed the selected, adjust selected index
-                            setSelectedProductIndex((old) => {
-                              const newLen = Math.max(0, products.length - 1)
-                              if (newLen === 0) return 0
-                              return Math.min(old, newLen - 1)
-                            })
-                          }}
-                          className="text-xs text-red-500 ml-2"
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className="flex items-start gap-6">
-                  <div className="w-64 h-64 bg-white rounded-lg flex items-center justify-center border-4 border-blue-300 overflow-hidden">
+                        <path
+                          d="M15 18l-6-6 6-6"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  )}
+
+                  {currentProduct && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProducts((arr) => {
+                          const newArr = arr.filter((_, idx) => idx !== selectedProductIndex)
+                          try {
+                            localStorage.setItem('sorteos_pending', JSON.stringify(newArr))
+                          } catch (err) {
+                            console.error('Error actualizando pendientes al eliminar', err)
+                          }
+                          const newLen = newArr.length
+                          setSelectedProductIndex((old) => {
+                            if (newLen === 0) return 0
+                            return Math.min(old, newLen - 1)
+                          })
+                          if (newLen === 0) setGenerated(false)
+                          return newArr
+                        })
+                      }}
+                      className="absolute top-3 right-3 text-red-500 hover:text-red-600 p-2"
+                      aria-label="Eliminar producto"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        className="h-6 w-6"
+                      >
+                        <path
+                          d="M5.5 7h13m-9.5-2h6a1 1 0 011 1v1h-8V6a1 1 0 011-1z"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M7 7v11a1 1 0 001 1h8a1 1 0 001-1V7"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M10 10v7m4-7v7"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    </button>
+                  )}
+
+                  <div className="w-56 h-56 bg-white rounded-lg flex items-center justify-center border-gray-200 overflow-hidden mx-14">
                     {displayImage ? (
                       <img
                         src={displayImage}
@@ -388,82 +417,87 @@ const SorteosContent = () => {
                         className="max-h-full max-w-full object-contain"
                       />
                     ) : (
-                      <div className="text-gray-400">No hay imagen</div>
+                      <div className="text-gray-400 text-sm">No hay imagen</div>
                     )}
                   </div>
 
-                  {/* Carousel controls for selected product */}
-                  {products.length > 1 && (
-                    <div className="flex flex-col items-center mt-2">
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={prevProduct}
-                          className="px-3 py-1 bg-white border rounded hover:bg-gray-50"
-                        >
-                          Anterior
-                        </button>
-                        <div className="text-sm text-gray-600">
-                          {selectedProductIndex + 1} / {products.length}
-                        </div>
-                        <button
-                          onClick={nextProduct}
-                          className="px-3 py-1 bg-white border rounded hover:bg-gray-50"
-                        >
-                          Siguiente
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
+                  <div className="flex-1 flex items-start gap-6">
+                    <div className="flex flex-col gap-4">
                       <div>
                         <div className="text-sm text-gray-500">Producto</div>
                         <div className="text-base font-semibold text-gray-900">
-                          {displayProductName}
+                          {displayProductName || 'Sin nombre'}
                         </div>
-                        <div className="text-sm text-gray-500 mt-3">Participan</div>
-                        <div className="text-sm text-gray-700">{participants}</div>
                       </div>
-
-                      <div className="flex flex-col items-end gap-2">
-                        {/* Botón Sortear / Sorteado */}
-                        {!sorteado ? (
-                          <button
-                            onClick={startDraw}
-                            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-150"
-                          >
-                            Sortear
-                          </button>
-                        ) : (
-                          <button
-                            disabled
-                            aria-disabled="true"
-                            className="bg-gray-200 text-gray-500 px-6 py-3 rounded-md font-medium cursor-not-allowed"
-                          >
-                            Sorteado
-                          </button>
-                        )}
-
-                        {/* Botón Editar / Volver a sortear */}
-                        {!sorteado ? (
-                          <button onClick={handleEdit} className="text-sm text-blue-600 underline">
-                            Editar sorteo
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              // abrir modal de confirmación; el sorteo real se hace solo si confirma
-                              setShowResortConfirm(true)
-                            }}
-                            className="text-sm text-red-600 font-medium hover:text-red-700"
-                          >
-                            Volver a sortear
-                          </button>
-                        )}
+                      <div>
+                        <div className="text-sm text-gray-500">Participan</div>
+                        <div className="text-sm text-base font-semibold text-gray-900">
+                          {displayParticipants}
+                        </div>
                       </div>
                     </div>
                   </div>
+
+                  <div className="absolute bottom-6 right-6 flex flex-col items-center gap-3 min-w-[150px]">
+                    {!sorteado ? (
+                      <button
+                        onClick={startDraw}
+                        className="bg-green-500 hover:bg-green-600 text-white px-14 py-2.5 rounded-md font-medium transition-colors duration-150"
+                      >
+                        Sortear
+                      </button>
+                    ) : (
+                      <button
+                        disabled
+                        aria-disabled="true"
+                        className="bg-gray-200 text-gray-500 px-6 py-2.5 rounded-md font-medium cursor-not-allowed"
+                      >
+                        Sorteado
+                      </button>
+                    )}
+
+                    {!sorteado ? (
+                      <button
+                        onClick={handleEdit}
+                        className="text-sm text-black hover:text-gray-800"
+                      >
+                        Editar sorteo
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setShowResortConfirm(true)
+                        }}
+                        className="text-sm text-red-600 font-medium hover:text-red-700"
+                      >
+                        Volver a sortear
+                      </button>
+                    )}
+                  </div>
+
+                  {products.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={nextProduct}
+                      className="absolute right-[-60px] top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-blue-500 text-white flex items-center justify-center shadow hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed z-30"
+                      aria-label="Siguiente producto"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        className="h-5 w-5"
+                      >
+                        <path
+                          d="M9 6l6 6-6 6"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               </div>
             )}
