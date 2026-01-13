@@ -1,5 +1,7 @@
 import React, {useState, useRef, useEffect} from 'react'
 import WinnerModal from './WinnerModal'
+import {useNotifications} from '../../../../notifications/NotificationProvider'
+import {notificationMessages} from '../../../../notifications/notifications.messages'
 
 const SorteosContent = () => {
   const [file, setFile] = useState(null)
@@ -11,30 +13,63 @@ const SorteosContent = () => {
   const [notification, setNotification] = useState(
     '¡Felicitaciones! Ganaste [item] pasa por el stand 2 a retirar tu premio.',
   )
+  const [formMode, setFormMode] = useState('create')
   const [showIntro, setShowIntro] = useState(true)
   const [generated, setGenerated] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
   const [sorteado, setSorteado] = useState(false)
-  const [toast, setToast] = useState({show: false, message: ''})
   const [products, setProducts] = useState([])
   const [selectedProductIndex, setSelectedProductIndex] = useState(0)
+  const [slideDirection, setSlideDirection] = useState('next')
+  const {notifySuccess, notifyError, notifyInfo} = useNotifications()
+  const generateTimeoutRef = useRef(null)
   const prevProduct = () => {
     if (products.length === 0) return
+    setSlideDirection('prev')
     setSelectedProductIndex((i) => (i - 1 + products.length) % products.length)
   }
   const nextProduct = () => {
     if (products.length === 0) return
+    setSlideDirection('next')
     setSelectedProductIndex((i) => (i + 1) % products.length)
+  }
+  const handleDeleteProduct = () => {
+    if (products.length === 0) return
+    const newArr = products.filter((_, idx) => idx !== selectedProductIndex)
+    const newLen = newArr.length
+    setProducts(newArr)
+    setSelectedProductIndex(newLen === 0 ? 0 : Math.min(selectedProductIndex, newLen - 1))
+    if (newLen === 0) setGenerated(false)
+
+    let didError = false
+    try {
+      localStorage.setItem('sorteos_pending', JSON.stringify(newArr))
+    } catch (err) {
+      console.error('Error actualizando pendientes al eliminar', err)
+      didError = true
+      notifyError(notificationMessages.genericError)
+    }
+    if (!didError) notifyInfo(notificationMessages.productDeleted)
   }
 
   useEffect(() => {
     if (!file) {
+      if (formMode === 'edit') return
       setPreview(null)
       return
     }
     const objectUrl = URL.createObjectURL(file)
     setPreview(objectUrl)
     return () => URL.revokeObjectURL(objectUrl)
-  }, [file])
+  }, [file, formMode])
+
+  useEffect(() => {
+    return () => {
+      if (generateTimeoutRef.current) {
+        clearTimeout(generateTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const onDrop = (e) => {
     e.preventDefault()
@@ -61,12 +96,54 @@ const SorteosContent = () => {
 
   const handleGenerate = async (e) => {
     e.preventDefault()
+    if (formMode === 'edit') {
+      if (!productName.trim()) {
+        return alert('Por favor ingresá el nombre del producto.')
+      }
+      let imageData = null
+      try {
+        imageData = await fileToDataUrl(file)
+      } catch (err) {
+        console.error('Error convirtiendo imagen:', err)
+        notifyError(notificationMessages.genericError)
+      }
+      const current = products[selectedProductIndex]
+      const updated = {
+        ...current,
+        productName,
+        participants,
+        notification,
+        image: imageData || current?.image,
+        preview: imageData || current?.preview || current?.image,
+      }
+      const updatedProducts = products.map((item, idx) =>
+        idx === selectedProductIndex ? updated : item,
+      )
+      setProducts(updatedProducts)
+      try {
+        localStorage.setItem('sorteos_pending', JSON.stringify(updatedProducts))
+      } catch (err) {
+        console.error('Error guardando edición en localStorage', err)
+        notifyError(notificationMessages.genericError)
+      }
+      setGenerated(true)
+      setFormMode('create')
+      setFile(null)
+      setPreview(null)
+      return
+    }
     if (!productName.trim() && products.length === 0) {
       alert(
         'Por favor ingresá el nombre del producto o añadí al menos un producto antes de generar.',
       )
       return
     }
+    if (isGenerating) return
+    if (generateTimeoutRef.current) {
+      clearTimeout(generateTimeoutRef.current)
+    }
+    const startedAt = Date.now()
+    setIsGenerating(true)
 
     let imageData = null
     try {
@@ -86,6 +163,7 @@ const SorteosContent = () => {
     // Si el formulario actual contiene un producto (no fue añadido previamente), lo añadimos y guardamos
     if (productName.trim()) {
       // si el producto actual no fue añadido previamente, lo guardamos en pendientes y en final
+      let didError = false
       try {
         // mover pendings a final + nuevo
         const pending = JSON.parse(localStorage.getItem('sorteos_pending') || '[]')
@@ -101,8 +179,11 @@ const SorteosContent = () => {
         localStorage.setItem('sorteos_pending', JSON.stringify([]))
       } catch (err) {
         console.error('Error guardando en localStorage', err)
+        didError = true
+        notifyError(notificationMessages.genericError)
       }
       setProducts((p) => [...p, nuevo])
+      if (!didError) notifySuccess(notificationMessages.productAdded)
     } else {
       // si no hay producto en el formulario, intentamos mover solo los pendientes a final
       try {
@@ -115,6 +196,7 @@ const SorteosContent = () => {
         }
       } catch (err) {
         console.error('Error moviendo pendientes a final', err)
+        notifyError(notificationMessages.genericError)
       }
     }
 
@@ -125,12 +207,32 @@ const SorteosContent = () => {
     setFile(null)
 
     // al generar un nuevo sorteo, resetear flag de "sorteado" y marcar generated
-    setSorteado(false)
-    setSelectedProductIndex(0)
-    setGenerated(true)
+    const completeGenerate = () => {
+      setSorteado(false)
+      setSelectedProductIndex(0)
+      setGenerated(true)
+      setIsGenerating(false)
+      generateTimeoutRef.current = null
+    }
+    const elapsed = Date.now() - startedAt
+    const remaining = Math.max(0, 350 - elapsed)
+    generateTimeoutRef.current = setTimeout(completeGenerate, remaining)
   }
 
-  const handleEdit = () => setGenerated(false)
+  const handleEdit = () => {
+    if (!currentProduct) return
+    setFormMode('edit')
+    setGenerated(false)
+    setIsGenerating(false)
+    setProductName(currentProduct.productName || '')
+    setParticipants(currentProduct.participants || 'Todos los asistentes')
+    setNotification(
+      currentProduct.notification ||
+        '¡Felicitaciones! Ganaste [item] pasa por el stand 2 a retirar tu premio.',
+    )
+    setFile(null)
+    setPreview(currentProduct.image || currentProduct.preview || null)
+  }
   const [showWinnerModal, setShowWinnerModal] = useState(false)
   const [winnerName, setWinnerName] = useState(null)
   const [showResortConfirm, setShowResortConfirm] = useState(false)
@@ -172,6 +274,7 @@ const SorteosContent = () => {
   const displayParticipants =
     products.length > 0 ? products[selectedProductIndex]?.participants : participants
   const currentProduct = products.length > 0 ? products[selectedProductIndex] : null
+  const slideClass = slideDirection === 'prev' ? 'product-swap-prev' : 'product-swap-next'
 
   return (
     <>
@@ -194,143 +297,195 @@ const SorteosContent = () => {
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-lg p-6 min-h-[320px] overflow-visible">
+          <div
+            className="bg-white rounded-2xl shadow-lg p-6 min-h-[320px] overflow-visible"
+            aria-busy={isGenerating ? 'true' : 'false'}
+          >
             {!generated ? (
-              <form onSubmit={handleGenerate}>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                  <div
-                    className="col-span-1 bg-gray-100 rounded-lg h-64 flex items-center justify-center border-2 border-dashed border-gray-300 text-gray-500 cursor-pointer overflow-hidden"
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={onDrop}
-                    onClick={openFilePicker}
-                    role="button"
-                    aria-label="Subir imagen premio"
-                  >
-                    {preview ? (
-                      <img
-                        src={preview}
-                        alt="Preview"
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    ) : (
-                      <div className="text-center px-4">
-                        <p className="font-medium">Subí o arrastra tu archivo acá</p>
-                        <p className="text-sm text-gray-500 mt-2">PNG, JPG, GIF — hasta 5MB</p>
+              isGenerating ? (
+                <div className="px-4 sorteo-panel-enter">
+                  <div className="relative flex items-center gap-10 w-full min-h-[260px]">
+                    <div className="w-56 h-56 rounded-lg bg-gray-100 overflow-hidden relative">
+                      <div className="absolute inset-0 sorteo-shimmer" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <span className="h-5 w-5 rounded-full border-2 border-blue-500 border-t-transparent animate-spin motion-reduce:animate-none" />
+                        <div>
+                          <div className="text-sm font-semibold text-gray-900">
+                            Generando sorteo...
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Preparando la vista del premio
+                          </div>
+                        </div>
                       </div>
-                    )}
-                    <input
-                      ref={inputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={onSelect}
-                    />
-                  </div>
-
-                  <div className="col-span-2">
-                    <div className="flex flex-col gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Nombre del producto
-                        </label>
-                        <input
-                          value={productName}
-                          onChange={(e) => setProductName(e.target.value)}
-                          className="mt-1 block w-1/2 border border-gray-300 rounded px-3 py-2"
-                          placeholder="Ingresa el nombre del producto a sortear"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Participan
-                        </label>
-                        <select
-                          value={participants}
-                          onChange={(e) => setParticipants(e.target.value)}
-                          className="mt-1 block w-1/2 border border-gray-300 rounded px-3 py-2"
-                        >
-                          <option>Todos los asistentes</option>
-                          <option>Asistentes acreditados</option>
-                        </select>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <button
-                          type="submit"
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
-                        >
-                          Generar sorteo
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            // Añadir producto temporal a la lista (convierte imagen a dataURL si existe)
-                            if (!productName.trim())
-                              return alert('Por favor ingresá el nombre del producto.')
-                            let imageData = null
-                            try {
-                              imageData = await fileToDataUrl(file)
-                            } catch (err) {
-                              console.error('Error convirtiendo imagen al añadir producto:', err)
-                            }
-                            const id = Date.now()
-                            const item = {
-                              id,
-                              productName,
-                              participants,
-                              notification,
-                              // prefer data URL preview (stable) if available
-                              preview: imageData || preview,
-                              image: imageData,
-                            }
-                            setProducts((p) => [...p, item])
-                            // guardar inmediatamente en localStorage (pendientes)
-                            try {
-                              const stored = JSON.parse(
-                                localStorage.getItem('sorteos_pending') || '[]',
-                              )
-                              stored.push(item)
-                              localStorage.setItem('sorteos_pending', JSON.stringify(stored))
-                            } catch (err) {
-                              console.error(
-                                'Error guardando en localStorage al añadir producto',
-                                err,
-                              )
-                            }
-                            // reset inputs for next product
-                            setProductName('')
-                            setParticipants('Todos los asistentes')
-                            setNotification(
-                              '¡Felicitaciones! Ganaste [item] pasa por el stand 2 a retirar tu premio.',
-                            )
-                            setFile(null)
-                          }}
-                          className="mt-2 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700"
-                        >
-                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          </span>
-                          <span className="text-sm">Añadir otro producto</span>
-                        </button>
+                      <div className="mt-6 space-y-3">
+                        <div className="relative h-3 w-32 rounded bg-gray-100 overflow-hidden">
+                          <div className="absolute inset-0 sorteo-shimmer" />
+                        </div>
+                        <div className="relative h-4 w-56 rounded bg-gray-100 overflow-hidden">
+                          <div className="absolute inset-0 sorteo-shimmer" />
+                        </div>
+                        <div className="relative h-3 w-40 rounded bg-gray-100 overflow-hidden">
+                          <div className="absolute inset-0 sorteo-shimmer" />
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </form>
+              ) : (
+                <form onSubmit={handleGenerate}>
+                  {formMode === 'edit' && (
+                    <div className="mb-4">
+                      <h4 className="text-lg font-semibold text-gray-900">Editar sorteo</h4>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                    <div
+                      className="col-span-1 bg-gray-100 rounded-lg h-64 flex items-center justify-center border-2 border-dashed border-gray-300 text-gray-500 cursor-pointer overflow-hidden"
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={onDrop}
+                      onClick={openFilePicker}
+                      role="button"
+                      aria-label="Subir imagen premio"
+                    >
+                      {preview ? (
+                        <img
+                          src={preview}
+                          alt="Preview"
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      ) : (
+                        <div className="text-center px-4">
+                          <p className="font-medium">Subí o arrastra tu archivo acá</p>
+                          <p className="text-sm text-gray-500 mt-2">PNG, JPG, GIF — hasta 5MB</p>
+                        </div>
+                      )}
+                      <input
+                        ref={inputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={onSelect}
+                      />
+                    </div>
+
+                    <div className="col-span-2">
+                      <div className="flex flex-col gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Nombre del producto
+                          </label>
+                          <input
+                            value={productName}
+                            onChange={(e) => setProductName(e.target.value)}
+                            className="mt-1 block w-1/2 border border-gray-300 rounded px-3 py-2"
+                            placeholder="Ingresa el nombre del producto a sortear"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Participan
+                          </label>
+                          <select
+                            value={participants}
+                            onChange={(e) => setParticipants(e.target.value)}
+                            className="mt-1 block w-1/2 border border-gray-300 rounded px-3 py-2"
+                          >
+                            <option>Todos los asistentes</option>
+                            <option>Asistentes acreditados</option>
+                          </select>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                        <button
+                          type="submit"
+                          disabled={isGenerating}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          {formMode === 'edit' ? 'Guardar cambios' : 'Generar sorteo'}
+                        </button>
+
+                        {formMode === 'create' && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              // Añadir producto temporal a la lista (convierte imagen a dataURL si existe)
+                              if (!productName.trim())
+                                return alert('Por favor ingresá el nombre del producto.')
+                              let imageData = null
+                              let didError = false
+                              try {
+                                imageData = await fileToDataUrl(file)
+                              } catch (err) {
+                                console.error(
+                                  'Error convirtiendo imagen al añadir producto:',
+                                  err,
+                                )
+                              }
+                              const id = Date.now()
+                              const item = {
+                                id,
+                                productName,
+                                participants,
+                                notification,
+                                // prefer data URL preview (stable) if available
+                                preview: imageData || preview,
+                                image: imageData,
+                              }
+                              setProducts((p) => [...p, item])
+                              // guardar inmediatamente en localStorage (pendientes)
+                              try {
+                                const stored = JSON.parse(
+                                  localStorage.getItem('sorteos_pending') || '[]',
+                                )
+                                stored.push(item)
+                                localStorage.setItem('sorteos_pending', JSON.stringify(stored))
+                              } catch (err) {
+                                console.error(
+                                  'Error guardando en localStorage al añadir producto',
+                                  err,
+                                )
+                                didError = true
+                                notifyError(notificationMessages.genericError)
+                              }
+                              if (!didError) notifySuccess(notificationMessages.productAdded)
+                              // reset inputs for next product
+                              setProductName('')
+                              setParticipants('Todos los asistentes')
+                              setNotification(
+                                '¡Felicitaciones! Ganaste [item] pasa por el stand 2 a retirar tu premio.',
+                              )
+                              setFile(null)
+                            }}
+                            className="mt-2 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700"
+                          >
+                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </span>
+                            <span className="text-sm">Añadir otro producto</span>
+                          </button>
+                        )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              )
             ) : (
-              <div className="px-4">
+              <div className="px-4 sorteo-panel-enter">
                 <div className="relative flex items-center gap-12 overflow-visible w-full min-h-[260px]">
                   {products.length > 1 && (
                     <button
@@ -359,24 +514,8 @@ const SorteosContent = () => {
                   {currentProduct && (
                     <button
                       type="button"
-                      onClick={() => {
-                        setProducts((arr) => {
-                          const newArr = arr.filter((_, idx) => idx !== selectedProductIndex)
-                          try {
-                            localStorage.setItem('sorteos_pending', JSON.stringify(newArr))
-                          } catch (err) {
-                            console.error('Error actualizando pendientes al eliminar', err)
-                          }
-                          const newLen = newArr.length
-                          setSelectedProductIndex((old) => {
-                            if (newLen === 0) return 0
-                            return Math.min(old, newLen - 1)
-                          })
-                          if (newLen === 0) setGenerated(false)
-                          return newArr
-                        })
-                      }}
-                      className="absolute top-3 right-3 text-red-500 hover:text-red-600 p-2"
+                      onClick={handleDeleteProduct}
+                      className="absolute top-3 right-3 z-40 text-red-500 hover:text-red-600 p-2"
                       aria-label="Eliminar producto"
                     >
                       <svg
@@ -409,30 +548,35 @@ const SorteosContent = () => {
                     </button>
                   )}
 
-                  <div className="w-56 h-56 bg-white rounded-lg flex items-center justify-center border-gray-200 overflow-hidden mx-14">
-                    {displayImage ? (
-                      <img
-                        src={displayImage}
-                        alt="Producto"
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    ) : (
-                      <div className="text-gray-400 text-sm">No hay imagen</div>
-                    )}
-                  </div>
+                  <div
+                    key={currentProduct?.id ?? selectedProductIndex}
+                    className={`flex flex-1 items-center gap-12 ${slideClass}`}
+                  >
+                    <div className="w-56 h-56 bg-white rounded-lg flex items-center justify-center border-gray-200 overflow-hidden mx-14">
+                      {displayImage ? (
+                        <img
+                          src={displayImage}
+                          alt="Producto"
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      ) : (
+                        <div className="text-gray-400 text-sm">No hay imagen</div>
+                      )}
+                    </div>
 
-                  <div className="flex-1 flex items-start gap-6">
-                    <div className="flex flex-col gap-4">
-                      <div>
-                        <div className="text-sm text-gray-500">Producto</div>
-                        <div className="text-base font-semibold text-gray-900">
-                          {displayProductName || 'Sin nombre'}
+                    <div className="flex-1 flex items-start gap-6">
+                      <div className="flex flex-col gap-4">
+                        <div>
+                          <div className="text-sm text-gray-500">Producto</div>
+                          <div className="text-base font-semibold text-gray-900">
+                            {displayProductName || 'Sin nombre'}
+                          </div>
                         </div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-gray-500">Participan</div>
-                        <div className="text-sm text-base font-semibold text-gray-900">
-                          {displayParticipants}
+                        <div>
+                          <div className="text-sm text-gray-500">Participan</div>
+                          <div className="text-sm text-base font-semibold text-gray-900">
+                            {displayParticipants}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -513,14 +657,13 @@ const SorteosContent = () => {
           winnerName={winnerName}
           productName={displayProductName}
           onNotify={(notificationText) => {
-            // marcar como sorteado y mostrar toast
+            // marcar como sorteado y notificar
             try {
               setSorteado(true)
-              setToast({show: true, message: 'Notificación enviada!'})
-              // ocultar toast después de 3s
-              setTimeout(() => setToast({show: false, message: ''}), 3000)
+              notifySuccess(notificationMessages.winnerNotified)
             } catch (e) {
               console.error('onNotify parent handler error', e)
+              notifyError(notificationMessages.genericError)
             }
           }}
         />
@@ -571,14 +714,6 @@ const SorteosContent = () => {
         </div>
       )}
 
-      {/* Toast simple bottom-right */}
-      {toast.show && (
-        <div className="fixed top-6 right-6 z-50">
-          <div className="bg-green-600 text-white px-4 py-2 rounded-md shadow-lg border border-green-700">
-            {toast.message}
-          </div>
-        </div>
-      )}
     </>
   )
 }

@@ -1,39 +1,71 @@
-import React, {useEffect, useState} from 'react'
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 
 const WinnerModal = ({open, onClose, winnerName, onRetry, productName, onNotify}) => {
-  const [loading, setLoading] = useState(true)
+  const [phase, setPhase] = useState('idle')
+  const [progress, setProgress] = useState(0)
   const [showNotificationEditor, setShowNotificationEditor] = useState(false)
-  const defaultTemplate = `¡Felicitaciones! Ganaste ${
-    productName || '[item]'
-  } pasa por el stand 2 a retirar tu premio. Te esperamos 🎉`
-  const [notificationText, setNotificationText] = useState(defaultTemplate)
-
-  useEffect(() => {
-    if (!open) return
-    setLoading(true)
-    // reset editor state when modal opens
-    setShowNotificationEditor(false)
-    setNotificationText(
+  const timersRef = useRef([])
+  const defaultTemplate = useMemo(
+    () =>
       `¡Felicitaciones! Ganaste ${
         productName || '[item]'
       } pasa por el stand 2 a retirar tu premio. Te esperamos 🎉`,
-    )
-    const t = setTimeout(() => setLoading(false), 2500)
-    return () => clearTimeout(t)
-  }, [open, productName])
+    [productName],
+  )
+  const [notificationText, setNotificationText] = useState(defaultTemplate)
+
+  const statusSteps = [
+    {key: 'starting', label: 'Buscando ganador...'},
+    {key: 'processing', label: 'Procesando participantes...'},
+    {key: 'revealing', label: 'Seleccionando resultado...'},
+  ]
+  const phaseIndex =
+    phase === 'starting' ? 0 : phase === 'processing' ? 1 : phase === 'revealing' ? 2 : 2
+  const isFinished = phase === 'finished'
+
+  const clearTimers = useCallback(() => {
+    timersRef.current.forEach((timer) => clearTimeout(timer))
+    timersRef.current = []
+  }, [])
+
+  const startFlow = useCallback(() => {
+    clearTimers()
+    setPhase('starting')
+    setProgress(12)
+    // Timings tuned for perceived quality: quick feedback + staged progress.
+    const timers = [
+      setTimeout(() => {
+        setPhase('processing')
+        setProgress(80)
+      }, 360),
+      setTimeout(() => {
+        setPhase('revealing')
+        setProgress(95)
+      }, 820),
+      setTimeout(() => {
+        setPhase('finished')
+        setProgress(100)
+      }, 960),
+    ]
+    timersRef.current = timers
+  }, [clearTimers])
+
+  useEffect(() => {
+    if (!open) return
+    // reset editor state when modal opens
+    setShowNotificationEditor(false)
+    setNotificationText(defaultTemplate)
+    startFlow()
+    return () => clearTimers()
+  }, [clearTimers, defaultTemplate, open, startFlow])
 
   if (!open) return null
 
   const handleRetry = () => {
-    setLoading(true)
-    // mostrar spinner breve, luego pedir nuevo ganador al padre
-    setTimeout(() => {
-      if (onRetry) onRetry()
-      // una vez que onRetry actualice el winner en el padre, el modal volverá
-      // a entrar en efecto 'open' si se mantiene visible; aquí ponemos loading=false
-      // para permitir que el parent vuelva a mostrar el resultado cuando lo cargue.
-      setLoading(false)
-    }, 1500)
+    if (!isFinished) return
+    if (onRetry) onRetry()
+    setShowNotificationEditor(false)
+    startFlow()
   }
 
   const handleNotify = () => {
@@ -51,105 +83,102 @@ const WinnerModal = ({open, onClose, winnerName, onRetry, productName, onNotify}
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-2xl w-full max-w-2xl p-6 shadow-lg">
-        {loading ? (
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center">
-              <svg
-                className="animate-spin h-12 w-12 text-blue-600"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                ></path>
-              </svg>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold">Buscando ganador...</div>
-              <div className="text-sm text-gray-500 mt-2">
-                Estamos eligiendo a la persona ganadora, por favor esperá
-              </div>
-            </div>
-          </div>
-        ) : showNotificationEditor ? (
-          <div className="flex flex-col gap-4">
-            <div className="w-full h-36 rounded-md overflow-hidden bg-gradient-to-r from-yellow-200 to-white flex items-center justify-center">
-              <img
-                src="/public/celebracion.png"
-                alt="robot"
-                className="object-contain w-full h-full p-4"
-              />
-            </div>
-            <h3 className="text-xl font-semibold">
-              ¡El premio va para {winnerName || '[nombre de asistente]'}!
-            </h3>
-
-            <div className="mt-2 rounded bg-gray-50 p-3">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600 font-medium">Notificación de premio</div>
-                <button
-                  onClick={() => setShowNotificationEditor(true)}
-                  className="text-sm text-blue-600 underline"
+      <div
+        className="bg-white rounded-2xl w-full max-w-3xl p-10 shadow-xl sorteo-modal-enter"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="flex flex-col items-center text-center gap-8">
+          <div className="flex flex-col items-center gap-2">
+            {statusSteps.map((step, index) => {
+              const isActive = !isFinished && index === phaseIndex
+              return (
+                <div
+                  key={`${step.key}-${isActive ? phase : 'idle'}`}
+                  className={`text-2xl md:text-3xl transition-all duration-300 ease-in-out ${
+                    isActive
+                      ? 'text-gray-900 font-semibold sorteo-text-fade'
+                      : 'text-gray-400'
+                  }`}
                 >
-                  Editar
-                </button>
-              </div>
-              <textarea
-                value={notificationText}
-                onChange={(e) => setNotificationText(e.target.value)}
-                className="mt-3 w-full h-24 p-2 border border-gray-200 rounded bg-white text-sm"
-              />
-            </div>
+                  {step.label}
+                </div>
+              )
+            })}
+          </div>
 
-            <div className="flex flex-col items-center gap-3 mt-4">
-              <button onClick={handleNotify} className="bg-blue-600 text-white px-6 py-2 rounded">
-                Enviar notificación
-              </button>
-              <button onClick={handleRetry} className="text-sm text-blue-600 underline">
-                Volver a sortear
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center text-center gap-4">
-            <div className="w-full h-36 rounded-md overflow-hidden bg-gradient-to-r from-yellow-200 to-white flex items-center justify-center">
-              <img
-                src="/public/celebracion.png"
-                alt="robot"
-                className="object-contain w-full h-full p-4"
+          <div className="w-full max-w-2xl">
+            <div
+              className="h-3 rounded-full bg-blue-100 overflow-hidden"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progress}
+            >
+              <div
+                className="h-full bg-blue-500 transition-all duration-500 ease-in-out"
+                style={{width: `${progress}%`}}
               />
             </div>
-            <h3 className="text-xl font-semibold">
-              ¡El premio va para {winnerName || '[nombre de asistente]'}!
-            </h3>
-            <p className="text-gray-600">
-              Mostrá el resultado del sorteo y celebrá a la persona que obtuvo el premio.
-            </p>
-            <div className="flex flex-col gap-4 mt-4">
-              <button
-                onClick={() => setShowNotificationEditor(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded"
-              >
-                Notificar resultado
-              </button>
-              <button onClick={handleRetry} className="text-sm text-blue-600 underline">
-                Volver a sortear
-              </button>
-            </div>
           </div>
-        )}
+
+          {isFinished && (
+            <div className="flex flex-col items-center gap-2 sorteo-winner-reveal">
+              <div className="text-lg text-gray-600">Ganador:</div>
+              <div className="text-3xl md:text-4xl font-semibold text-gray-900">
+                {winnerName || '[nombre de asistente]'} 🎉
+              </div>
+            </div>
+          )}
+
+          {isFinished && (
+            <div className="w-full flex flex-col items-center gap-4">
+              {showNotificationEditor ? (
+                <div className="w-full max-w-xl rounded-lg bg-gray-50 p-4 text-left">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-600 font-medium">
+                      Notificación de premio
+                    </div>
+                    <button
+                      onClick={() => setShowNotificationEditor(false)}
+                      className="text-sm text-blue-600 underline"
+                    >
+                      Ocultar
+                    </button>
+                  </div>
+                  <textarea
+                    value={notificationText}
+                    onChange={(e) => setNotificationText(e.target.value)}
+                    className="mt-3 w-full h-24 p-2 border border-gray-200 rounded bg-white text-sm"
+                  />
+                  <div className="mt-4 flex flex-col items-center gap-3">
+                    <button
+                      onClick={handleNotify}
+                      className="bg-blue-600 text-white px-6 py-2 rounded"
+                    >
+                      Enviar notificación
+                    </button>
+                    <button onClick={handleRetry} className="text-sm text-blue-600 underline">
+                      Volver a sortear
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-3">
+                  <button
+                    onClick={() => setShowNotificationEditor(true)}
+                    className="bg-blue-600 text-white px-5 py-2 rounded"
+                  >
+                    Notificar resultado
+                  </button>
+                  <button onClick={handleRetry} className="text-sm text-blue-600 underline">
+                    Volver a sortear
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

@@ -12,7 +12,7 @@ const Header = () => {
             <img
               src="/public/robot_afirmativo.png"
               alt=""
-              className="absolute top-0 -left-10 w-full h-full  z-10"
+              className="absolute top-0 h-full  z-10"
             />
             <button className="bg-primary-400 hover:bg-primary-500 text-dark px-8 py-2 rounded-md text-sm font-medium transition-colors duration-200 z-20 absolute right-0 bottom-8 shadow-lg">
               Agenda completa
