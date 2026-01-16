@@ -279,24 +279,7 @@ const SorteosContent = () => {
   return (
     <>
       <div className="w-full">
-        {showIntro ? (
-          <div className="bg-white rounded-2xl shadow-lg p-8 h-[400px] flex flex-col items-center justify-center text-center gap-4">
-            <div className="max-w-xl">
-              <h3 className="text-2xl font-semibold text-gray-900 mb-2">
-                Armá un sorteo en segundos
-              </h3>
-              <p className="text-gray-600">
-                Elegí a los participantes y dejá que la plataforma elija al ganador en un instante.
-              </p>
-            </div>
-            <button
-              onClick={() => setShowIntro(false)}
-              className="m-0 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium shadow transition-colors duration-200"
-            >
-              Crear sorteo
-            </button>
-          </div>
-        ) : (
+        {
           <div
             className="bg-white rounded-2xl shadow-lg p-6 min-h-[320px] overflow-visible"
             aria-busy={isGenerating ? 'true' : 'false'}
@@ -338,7 +321,7 @@ const SorteosContent = () => {
                 <form onSubmit={handleGenerate}>
                   {formMode === 'edit' && (
                     <div className="mb-4">
-                      <h4 className="text-lg font-semibold text-gray-900">Editar sorteo</h4>
+                      <h4 className="text-lg font-semibold text-gray-900">Editar producto</h4>
                     </div>
                   )}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
@@ -398,86 +381,71 @@ const SorteosContent = () => {
                             <option>Asistentes acreditados</option>
                           </select>
                         </div>
-                        <div className="flex flex-col items-end gap-2">
-                        <button
-                          type="submit"
-                          disabled={isGenerating}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                          {formMode === 'edit' ? 'Guardar cambios' : 'Generar sorteo'}
-                        </button>
-
-                        {formMode === 'create' && (
+                        <div className="flex flex-row justify-between">
+                          {formMode === 'create' && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                // Añadir producto temporal a la lista (convierte imagen a dataURL si existe)
+                                if (!productName.trim())
+                                  return alert('Por favor ingresá el nombre del producto.')
+                                let imageData = null
+                                let didError = false
+                                try {
+                                  imageData = await fileToDataUrl(file)
+                                } catch (err) {
+                                  console.error(
+                                    'Error convirtiendo imagen al añadir producto:',
+                                    err,
+                                  )
+                                }
+                                const id = Date.now()
+                                const item = {
+                                  id,
+                                  productName,
+                                  participants,
+                                  notification,
+                                  // prefer data URL preview (stable) if available
+                                  preview: imageData || preview,
+                                  image: imageData,
+                                }
+                                setProducts((p) => [...p, item])
+                                // guardar inmediatamente en localStorage (pendientes)
+                                try {
+                                  const stored = JSON.parse(
+                                    localStorage.getItem('sorteos_pending') || '[]',
+                                  )
+                                  stored.push(item)
+                                  localStorage.setItem('sorteos_pending', JSON.stringify(stored))
+                                } catch (err) {
+                                  console.error(
+                                    'Error guardando en localStorage al añadir producto',
+                                    err,
+                                  )
+                                  didError = true
+                                  notifyError(notificationMessages.genericError)
+                                }
+                                if (!didError) notifySuccess(notificationMessages.productAdded)
+                                // reset inputs for next product
+                                setProductName('')
+                                setParticipants('Todos los asistentes')
+                                setNotification(
+                                  '¡Felicitaciones! Ganaste [item] pasa por el stand 2 a retirar tu premio.',
+                                )
+                                setFile(null)
+                              }}
+                              className="relative z-10 mt-2 inline-flex items-center gap-2 rounded-lg border-2 border-blue-500 bg-white px-4 py-1.5 text-sm font-medium text-blue-500 transition-all duration-150 hover:bg-blue-100 hover:border-blue-00 hover:text-blue-700 hover:shadow-md hover:ring-2 hover:ring-blue-200"
+                            >
+                              <span className="text-sm ">Añadir producto</span>
+                            </button>
+                          )}
                           <button
-                            type="button"
-                            onClick={async () => {
-                              // Añadir producto temporal a la lista (convierte imagen a dataURL si existe)
-                              if (!productName.trim())
-                                return alert('Por favor ingresá el nombre del producto.')
-                              let imageData = null
-                              let didError = false
-                              try {
-                                imageData = await fileToDataUrl(file)
-                              } catch (err) {
-                                console.error(
-                                  'Error convirtiendo imagen al añadir producto:',
-                                  err,
-                                )
-                              }
-                              const id = Date.now()
-                              const item = {
-                                id,
-                                productName,
-                                participants,
-                                notification,
-                                // prefer data URL preview (stable) if available
-                                preview: imageData || preview,
-                                image: imageData,
-                              }
-                              setProducts((p) => [...p, item])
-                              // guardar inmediatamente en localStorage (pendientes)
-                              try {
-                                const stored = JSON.parse(
-                                  localStorage.getItem('sorteos_pending') || '[]',
-                                )
-                                stored.push(item)
-                                localStorage.setItem('sorteos_pending', JSON.stringify(stored))
-                              } catch (err) {
-                                console.error(
-                                  'Error guardando en localStorage al añadir producto',
-                                  err,
-                                )
-                                didError = true
-                                notifyError(notificationMessages.genericError)
-                              }
-                              if (!didError) notifySuccess(notificationMessages.productAdded)
-                              // reset inputs for next product
-                              setProductName('')
-                              setParticipants('Todos los asistentes')
-                              setNotification(
-                                '¡Felicitaciones! Ganaste [item] pasa por el stand 2 a retirar tu premio.',
-                              )
-                              setFile(null)
-                            }}
-                            className="mt-2 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700"
+                            type="submit"
+                            disabled={isGenerating}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                           >
-                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-4 w-4"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                            </span>
-                            <span className="text-sm">Añadir otro producto</span>
+                            {formMode === 'edit' ? 'Guardar cambios' : 'Crear sorteo'}
                           </button>
-                        )}
                         </div>
                       </div>
                     </div>
@@ -574,15 +542,33 @@ const SorteosContent = () => {
                         </div>
                         <div>
                           <div className="text-sm text-gray-500">Participan</div>
-                          <div className="text-sm text-base font-semibold text-gray-900">
+                          <div className="text-sm font-semibold text-gray-900">
                             {displayParticipants}
+                          </div>
+                          <div>
+                            {!sorteado ? (
+                              <button
+                                onClick={handleEdit}
+                                className="relative z-10 mt-4 inline-flex items-center p-2 rounded-lg border-2 border-blue-500 bg-white px-4 py-1.5 text-sm font-medium text-blue-500 transition-all duration-150 hover:bg-blue-100 hover:border-blue-00 hover:text-blue-700 hover:shadow-md hover:ring-2 hover:ring-blue-200"
+                              >
+                                Editar producto
+                              </button>
+                            ) : (
+                              <button
+                                disabled
+                                aria-disabled="true"
+                                className="mt-4 bg-gray-200 text-gray-500 px-6 py-2.5 rounded-md font-medium cursor-not-allowed"
+                              >
+                                Editar producto
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="absolute bottom-6 right-6 flex flex-col items-center gap-3 min-w-[150px]">
+                  <div className="bottom-6 right-6 flex flex-col items-center gap-3 min-w-[150px]">
                     {!sorteado ? (
                       <button
                         onClick={startDraw}
@@ -594,19 +580,14 @@ const SorteosContent = () => {
                       <button
                         disabled
                         aria-disabled="true"
-                        className="bg-gray-200 text-gray-500 px-6 py-2.5 rounded-md font-medium cursor-not-allowed"
+                        className="bg-gray-800 text-white px-14 py-2 rounded-xl font-medium cursor-not-allowed m-2"
                       >
                         Sorteado
                       </button>
                     )}
 
                     {!sorteado ? (
-                      <button
-                        onClick={handleEdit}
-                        className="text-sm text-black hover:text-gray-800"
-                      >
-                        Editar sorteo
-                      </button>
+                      <></>
                     ) : (
                       <button
                         onClick={() => {
@@ -646,7 +627,7 @@ const SorteosContent = () => {
               </div>
             )}
           </div>
-        )}
+        }
       </div>
 
       {showWinnerModal && (
@@ -713,7 +694,6 @@ const SorteosContent = () => {
           </div>
         </div>
       )}
-
     </>
   )
 }
