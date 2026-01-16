@@ -132,7 +132,7 @@ const WinnerModal = ({open, onClose, winnerName, onRetry, productName, onNotify}
                 <img
                   src="/public/celebracion.png"
                   alt="celebracion"
-                  className="object-contain w-full h-full p-4"
+                  className="object-contain w-full h-full"
                 />
               </div>
 
@@ -172,7 +172,7 @@ const WinnerModal = ({open, onClose, winnerName, onRetry, productName, onNotify}
                   <div className="w-full flex flex-col items-center gap-3">
                     <button
                       onClick={handleNotify}
-                      className="bg-blue-600 text-white px-8 py-2.5 rounded-full font-medium"
+                      className="bg-blue-600 text-white px-8 py-2.5 rounded-lg font-medium"
                     >
                       Enviar notificación
                     </button>
@@ -185,7 +185,7 @@ const WinnerModal = ({open, onClose, winnerName, onRetry, productName, onNotify}
                 <div className="w-full flex flex-col items-center gap-3">
                   <button
                     onClick={handleNotify}
-                    className="bg-blue-600 text-white px-8 py-2.5 rounded-full font-medium"
+                    className="bg-blue-600 text-white px-8 py-2.5 rounded-lg font-medium"
                   >
                     Notificar resultado
                   </button>
