@@ -89,10 +89,18 @@ const WinnerModal = ({open, onClose, winnerName, onRetry, productName, onNotify}
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div
-        className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl sorteo-modal-enter"
+        className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl sorteo-modal-enter relative"
         role="dialog"
         aria-modal="true"
       >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-2 right-4 text-gray-400 hover:text-gray-700 text-2xl font-bold"
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
         <div className="flex flex-col items-center text-center gap-5">
           {!isFinished && (
             <div className="flex flex-col items-center gap-2">
@@ -101,7 +109,7 @@ const WinnerModal = ({open, onClose, winnerName, onRetry, productName, onNotify}
                 return (
                   <div
                     key={`${step.key}-${isActive ? phase : 'idle'}`}
-                    className={`text-2xl md:text-3xl transition-all duration-300 ease-in-out ${
+                    className={`text-xl md:text-2xl transition-all duration-300 ease-in-out ${
                       isActive ? 'text-gray-900 font-semibold sorteo-text-fade' : 'text-gray-400'
                     }`}
                   >
@@ -147,7 +155,7 @@ const WinnerModal = ({open, onClose, winnerName, onRetry, productName, onNotify}
 
               {/* Estado post-notificacion: mantiene el layout y cambia el CTA principal. */}
               {postNotify ? (
-                <div className="w-full flex flex-col items-center gap-4">
+                <divutarit className="w-full flex flex-col items-center gap-4">
                   <div className="w-full max-w-sm rounded-lg bg-gray-100 px-4 py-3 text-left">
                     <div className="flex items-center justify-between text-sm text-gray-600">
                       <span className="font-medium">Notificación de premio</span>
@@ -180,7 +188,7 @@ const WinnerModal = ({open, onClose, winnerName, onRetry, productName, onNotify}
                       Volver a sortear
                     </button>
                   </div>
-                </div>
+                </divutarit>
               ) : (
                 <div className="w-full flex flex-col items-center gap-3">
                   <button
