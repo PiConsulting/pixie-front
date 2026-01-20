@@ -109,7 +109,7 @@ const WinnerModal = ({open, onClose, winnerName, onRetry, productName, onNotify}
                 return (
                   <div
                     key={`${step.key}-${isActive ? phase : 'idle'}`}
-                    className={`text-xl md:text-2xl transition-all duration-300 ease-in-out ${
+                    className={`text-lg md:text-xl transition-all duration-300 ease-in-out ${
                       isActive ? 'text-gray-900 font-semibold sorteo-text-fade' : 'text-gray-400'
                     }`}
                   >

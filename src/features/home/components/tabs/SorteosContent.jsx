@@ -434,7 +434,7 @@ const SorteosContent = () => {
                                 )
                                 setFile(null)
                               }}
-                              className="relative z-10 mt-4 inline-flex items-center p-2 rounded-lg border-2 border-blue-500 bg-white px-4 py-1.5 text-sm font-medium text-blue-500 transition-all duration-150 hover:bg-blue-100 hover:border-blue-00 hover:text-blue-700 hover:shadow-md hover:ring-2 hover:ring-blue-200"
+                              className="relative z-10 mt-4 inline-flex h-10 w-48 items-center justify-center rounded-lg border-2 border-blue-500 bg-white text-sm font-medium text-blue-500 transition-all duration-150 hover:bg-blue-100 hover:border-blue-00 hover:text-blue-700 hover:shadow-md hover:ring-2 hover:ring-blue-200"
                             >
                               <span className="text-sm ">Añadir producto</span>
                             </button>
@@ -442,7 +442,7 @@ const SorteosContent = () => {
                           <button
                             type="submit"
                             disabled={isGenerating}
-                            className="relative z-10 mt-4 inline-flex items-center p-2 rounded-lg border-2 border-blue-500 bg-blue-600 py-2 px-8 text-sm font-medium text-white transition-all duration-150 hover:bg-blue-800 hover:border-blue-00 0 hover:shadow-md hover:ring-2 hover:ring-blue-200"
+                            className="relative z-10 mt-4 inline-flex h-10 w-48 items-center justify-center rounded-lg border-2 border-blue-500 bg-blue-600 text-sm font-medium text-white transition-all duration-150 hover:bg-blue-800 hover:border-blue-00 0 hover:shadow-md hover:ring-2 hover:ring-blue-200 mr-10"
                           >
                             {formMode === 'edit' ? 'Guardar cambios' : 'Crear sorteo'}
                           </button>
@@ -549,7 +549,7 @@ const SorteosContent = () => {
                             {!sorteado ? (
                               <button
                                 onClick={handleEdit}
-                                className="relative z-10 mt-4 inline-flex items-center p-2 rounded-lg border-2 border-blue-500 bg-white px-4 py-2 text-sm font-medium text-blue-500 transition-all duration-150 hover:bg-blue-100 hover:border-blue-00 hover:text-blue-700 hover:shadow-md hover:ring-2 hover:ring-blue-200"
+                                className="relative z-10 mt-4 inline-flex h-10 w-48 items-center justify-center rounded-lg border-2 border-blue-500 bg-white text-sm font-medium text-blue-500 transition-all duration-150 hover:bg-blue-100 hover:border-blue-00 hover:text-blue-700 hover:shadow-md hover:ring-2 hover:ring-blue-200"
                               >
                                 Editar producto
                               </button>
@@ -557,7 +557,7 @@ const SorteosContent = () => {
                               <button
                                 disabled
                                 aria-disabled="true"
-                                className="mt-4 bg-gray-200 text-gray-500 px-6 py-2.5 rounded-md font-medium cursor-not-allowed"
+                                className="mt-4 inline-flex h-10 w-48 items-center justify-center rounded-md bg-gray-200 text-gray-500 font-medium cursor-not-allowed"
                               >
                                 Editar producto
                               </button>
@@ -572,7 +572,7 @@ const SorteosContent = () => {
                     {!sorteado ? (
                       <button
                         onClick={startDraw}
-                        className="absolute z-10 mt-10 inline-flex items-center p-2 rounded-lg border-2 border-blue-500 bg-green-600 py-2 px-12 text-sm font-medium text-white transition-all duration-150 hover:bg-blue-800 hover:border-blue-00 0 hover:shadow-md hover:ring-2 hover:ring-blue-200"
+                        className="absolute z-10 mt-10 inline-flex h-10 w-48 items-center justify-center rounded-lg border-2 border-blue-500 bg-green-600 text-sm font-medium text-white transition-all duration-150 hover:bg-blue-800 hover:border-blue-00 0 hover:shadow-md hover:ring-2 hover:ring-blue-200 mr-20"
                       >
                         Sortear
                       </button>
@@ -580,7 +580,7 @@ const SorteosContent = () => {
                       <button
                         disabled
                         aria-disabled="true"
-                        className="bg-gray-800 text-white px-14 py-2 rounded-xl font-medium cursor-not-allowed m-2"
+                        className="bg-gray-800 text-white px-14 py-2 rounded-xl font-medium cursor-not-allowed m-2 mr-6"
                       >
                         Sorteado
                       </button>
