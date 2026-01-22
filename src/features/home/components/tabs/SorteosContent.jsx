@@ -298,9 +298,7 @@ const SorteosContent = () => {
                         <div className="text-sm font-semibold text-gray-900">
                           Generando sorteo...
                         </div>
-                        <div className="text-xs text-gray-500">
-                          Preparando la vista del premio
-                        </div>
+                        <div className="text-xs text-gray-500">Preparando la vista del premio</div>
                       </div>
                     </div>
                     <div className="mt-6 space-y-3">
@@ -431,7 +429,7 @@ const SorteosContent = () => {
                               )
                               setFile(null)
                             }}
-                            className="relative z-10 mt-4 inline-flex h-10 w-full sm:w-48 items-center justify-center rounded-lg border-2 border-blue-500 bg-white text-sm font-medium text-blue-500 transition-all duration-150 hover:bg-blue-100 hover:border-blue-00 hover:text-blue-700 hover:shadow-md hover:ring-2 hover:ring-blue-200"
+                            className="relative z-10 mt-10 inline-flex h-10 w-full sm:w-48 items-center justify-center rounded-lg border-2 border-blue-500 bg-white text-sm font-medium text-blue-500 transition-all duration-150 hover:bg-blue-100 hover:border-blue-00 hover:text-blue-700 hover:shadow-md hover:ring-2 hover:ring-blue-200"
                           >
                             <span className="text-sm ">Añadir producto</span>
                           </button>
@@ -439,7 +437,7 @@ const SorteosContent = () => {
                         <button
                           type="submit"
                           disabled={isGenerating}
-                          className="relative z-10 mt-4 inline-flex h-10 w-full sm:w-48 items-center justify-center rounded-lg border-2 border-blue-500 bg-blue-600 text-sm font-medium text-white transition-all duration-150 hover:bg-blue-800 hover:border-blue-00 0 hover:shadow-md hover:ring-2 hover:ring-blue-200 sm:mr-10"
+                          className="relative z-10 mt-10 inline-flex h-10 w-full sm:w-48 items-center justify-center rounded-lg border-2 border-blue-500 bg-blue-600 text-sm font-medium text-white transition-all duration-150 hover:bg-blue-800 hover:border-blue-00 0 hover:shadow-md hover:ring-2 hover:ring-blue-200 sm:mr-10"
                         >
                           {formMode === 'edit' ? 'Guardar cambios' : 'Crear sorteo'}
                         </button>
@@ -530,7 +528,7 @@ const SorteosContent = () => {
                   </div>
 
                   <div className="flex-1 w-full flex items-start gap-6">
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-6 mt-4">
                       <div>
                         <div className="text-sm text-gray-500">Producto</div>
                         <div className="text-base font-semibold text-gray-900">
@@ -542,11 +540,11 @@ const SorteosContent = () => {
                         <div className="text-sm font-semibold text-gray-900">
                           {displayParticipants}
                         </div>
-                        <div>
+                        <div className="mt-8">
                           {!sorteado ? (
                             <button
                               onClick={handleEdit}
-                              className="relative z-10 mt-4 inline-flex h-10 w-full sm:w-48 items-center justify-center rounded-lg border-2 border-blue-500 bg-white text-sm font-medium text-blue-500 transition-all duration-150 hover:bg-blue-100 hover:border-blue-00 hover:text-blue-700 hover:shadow-md hover:ring-2 hover:ring-blue-200"
+                              className="relative z-10 inline-flex h-10 w-full sm:w-48 items-center justify-center rounded-lg border-2 border-blue-500 bg-white text-sm font-medium text-blue-500 transition-all duration-150 hover:bg-blue-100 hover:border-blue-00 hover:text-blue-700 hover:shadow-md hover:ring-2 hover:ring-blue-200"
                             >
                               Editar producto
                             </button>
@@ -565,7 +563,7 @@ const SorteosContent = () => {
                   </div>
                 </div>
 
-                <div className="flex w-full flex-col items-center gap-3 min-w-[150px] lg:w-auto">
+                <div className="flex w-full flex-col items-center gap-3 min-w-[150px] lg:w-auto mt-10">
                   {!sorteado ? (
                     <button
                       onClick={startDraw}
