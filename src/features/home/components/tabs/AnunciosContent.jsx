@@ -27,13 +27,14 @@ const AnunciosContent = () => {
 
   return (
     <div className="w-full">
-      <div className="bg-white rounded-2xl shadow-lg p-6 h-[400px] flex flex-col">
+      {/* Responsive: let the panel grow on mobile while keeping desktop height. */}
+      <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 h-auto md:h-[400px] flex flex-col">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch flex-1 min-h-0">
           {/* Left column - historial */}
           <div className="md:col-span-1 h-full min-h-0">
             <div className="bg-white rounded-xl shadow-sm p-4 text-left flex flex-col h-full">
               <h4 className="text-sm font-semibold text-gray-700 mb-2">Historial</h4>
-              <div className="flex-1 overflow-y-auto pr-2 min-h-0">
+              <div className="flex-1 overflow-visible md:overflow-y-auto pr-2 min-h-0">
                 {history.length === 0 ? (
                   <div className="flex-1 flex items-center justify-center">
                     <div className="text-s pt-20 p-8 text-gray-500 text-center">
@@ -91,7 +92,7 @@ const AnunciosContent = () => {
                   <div className="flex justify-center pb-4">
                     <button
                       onClick={handleCreate}
-                      className="m-0 bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-lg font-medium transition-colors duration-200"
+                      className="m-0 w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-lg font-medium transition-colors duration-200"
                     >
                       Crear anuncio
                     </button>
@@ -125,10 +126,10 @@ const AnunciosContent = () => {
                     </textarea>
                   </div>
 
-                  <div className="mt-4 flex justify-end">
+                  <div className="mt-4 flex justify-center sm:justify-end">
                     <button
                       onClick={handleSend}
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2.5 rounded-md font-medium transition-colors duration-200"
+                      className="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white px-4 py-2.5 rounded-md font-medium transition-colors duration-200"
                     >
                       Enviar anuncio
                     </button>

@@ -13,23 +13,24 @@ const EventoModal = ({isOpen, onClose}) => {
           ×
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 px-8 py-10 lg:px-12 lg:py-12">
+        {/* Responsive: reduce padding and stack content on small screens. */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 px-5 py-6 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
           <div className="flex flex-col">
             <div className="max-w-md text-center lg:text-left">
-              <h2 className="px-8 pt-10 text-2xl font-semibold text-gray-900">
+              <h2 className="px-4 sm:px-8 pt-6 sm:pt-10 text-2xl font-semibold text-gray-900">
                 Te damos la bienvenida a Pixie
               </h2>
-              <p className="p-8 text-l leading-relaxed">
+              <p className="p-4 sm:p-8 text-l leading-relaxed">
                 Empecemos a organizar tu evento, cargá la información básica y Pixie se encarga del
                 resto.
               </p>
             </div>
 
-            <div className="flex-1 flex items-center justify-center pt-20lg:pt-0">
+            <div className="flex-1 flex items-center justify-center pt-6 sm:pt-10 lg:pt-0">
               <img
                 src="/robot.png"
                 alt="Pixie Mascota"
-                className="h-56 md:h-80 object-contain m-10"
+                className="h-56 md:h-80 object-contain m-6 sm:m-10"
               />
             </div>
           </div>

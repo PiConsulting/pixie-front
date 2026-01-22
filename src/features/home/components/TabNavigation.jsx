@@ -11,9 +11,9 @@ const TabNavigation = ({activeTab, onTabChange}) => {
 
   return (
     <div className="flex justify-center mb-8">
+      {/* Responsive: allow full-width tab bar on small screens for comfortable tapping. */}
       <div
-        className="relative inline-flex items-center rounded-full bg-[#f6ecd9] overflow-hidden"
-        style={{width: '350px', height: '26px'}}
+        className="relative inline-flex w-full max-w-[350px] items-center rounded-full bg-[#f6ecd9] overflow-hidden h-9 sm:h-[26px]"
       >
         {/* sliding indicator */}
         <div
@@ -31,7 +31,7 @@ const TabNavigation = ({activeTab, onTabChange}) => {
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`flex-1 text-sm font-medium py-2 transition-colors duration-300 ease-in-out relative z-10 ${
+              className={`flex-1 text-xs sm:text-sm font-medium py-2 transition-colors duration-300 ease-in-out relative z-10 ${
                 active ? 'text-black' : 'text-black/70'
               } text-center`}
             >

@@ -87,9 +87,9 @@ const WinnerModal = ({open, onClose, winnerName, onRetry, productName, onNotify}
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6">
       <div
-        className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl sorteo-modal-enter relative"
+        className="bg-white rounded-2xl w-full max-w-md p-4 sm:p-6 shadow-xl sorteo-modal-enter relative"
         role="dialog"
         aria-modal="true"
       >
@@ -180,7 +180,7 @@ const WinnerModal = ({open, onClose, winnerName, onRetry, productName, onNotify}
                   <div className="w-full flex flex-col items-center gap-3">
                     <button
                       onClick={handleNotify}
-                      className="bg-blue-600 text-white px-8 py-2.5 rounded-lg font-medium"
+                      className="w-full sm:w-auto bg-blue-600 text-white px-8 py-2.5 rounded-lg font-medium"
                     >
                       Enviar notificación
                     </button>
@@ -193,7 +193,7 @@ const WinnerModal = ({open, onClose, winnerName, onRetry, productName, onNotify}
                 <div className="w-full flex flex-col items-center gap-3">
                   <button
                     onClick={handleNotify}
-                    className="bg-blue-600 text-white px-8 py-2.5 rounded-lg font-medium"
+                    className="w-full sm:w-auto bg-blue-600 text-white px-8 py-2.5 rounded-lg font-medium"
                   >
                     Notificar resultado
                   </button>
