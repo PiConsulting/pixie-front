@@ -177,6 +177,28 @@
     }
   }
 
+  /* Toast fade-in: 400ms for a clear but gentle entrance. */
+  @keyframes toast-fade-in {
+    0% {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Toast fade-out: 650ms, opacity-only to keep the toast position stable. */
+  @keyframes toast-fade-out {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
   .sorteo-panel-enter {
     animation: sorteo-panel-enter 360ms ease-in-out both;
     will-change: transform, opacity;
@@ -200,6 +222,16 @@
     animation: sorteo-winner-reveal 420ms ease-out both;
   }
 
+  .toast-enter {
+    animation: toast-fade-in 400ms ease-out both;
+    will-change: transform, opacity;
+  }
+
+  .toast-exit {
+    animation: toast-fade-out 650ms ease-in both;
+    will-change: opacity;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .product-swap-next,
     .product-swap-prev,
@@ -207,8 +239,15 @@
     .sorteo-shimmer,
     .sorteo-modal-enter,
     .sorteo-text-fade,
-    .sorteo-winner-reveal {
+    .sorteo-winner-reveal,
+    .toast-enter,
+    .toast-exit {
       animation: none !important;
+    }
+
+    .toast-enter,
+    .toast-exit {
+      transform: none !important;
     }
   }
 }

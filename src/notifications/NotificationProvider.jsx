@@ -2,6 +2,8 @@ import React, {createContext, useCallback, useContext, useEffect, useMemo, useRe
 import {notificationService} from './notificationService'
 
 const NotificationContext = createContext(null)
+// Exit duration matches the CSS fade-out so removal feels smooth.
+const TOAST_EXIT_DURATION_MS = 650
 
 const getToastStyles = (type) => {
   if (type === 'success') return 'border-l-4 border-green-500 bg-green-50 text-green-900'
@@ -30,31 +32,79 @@ const createToastId = () => {
 export const NotificationProvider = ({children, autoCloseMs = 3500}) => {
   const [toasts, setToasts] = useState([])
   const timeoutsRef = useRef(new Map())
+  const toastRefs = useRef(new Map())
 
-  const removeToast = useCallback((id) => {
-    setToasts((current) => current.filter((toast) => toast.id !== id))
-    const timeoutId = timeoutsRef.current.get(id)
-    if (timeoutId) {
-      clearTimeout(timeoutId)
-      timeoutsRef.current.delete(id)
+  const getToastExitMetrics = useCallback((id) => {
+    const node = toastRefs.current.get(id)
+    if (!node) return null
+    return {
+      exitOffsetTop: node.offsetTop,
+      exitWidth: node.offsetWidth,
     }
   }, [])
+
+  const clearToastTimeouts = useCallback((id) => {
+    const timeouts = timeoutsRef.current.get(id)
+    if (!timeouts) return
+    if (timeouts.autoCloseId) clearTimeout(timeouts.autoCloseId)
+    if (timeouts.removeId) clearTimeout(timeouts.removeId)
+    timeoutsRef.current.delete(id)
+  }, [])
+
+  const finalizeToastRemoval = useCallback(
+    (id) => {
+      setToasts((current) => current.filter((toast) => toast.id !== id))
+      clearToastTimeouts(id)
+    },
+    [clearToastTimeouts],
+  )
+
+  const beginToastExit = useCallback(
+    (id) => {
+      const exitMetrics = getToastExitMetrics(id) || {}
+      let shouldScheduleRemoval = false
+      setToasts((current) => {
+        const index = current.findIndex((toast) => toast.id === id)
+        if (index === -1 || current[index].isExiting) return current
+        const next = [...current]
+        // Capture the current position so the toast can fade out without shifting the stack.
+        next[index] = {...current[index], isExiting: true, ...exitMetrics}
+        shouldScheduleRemoval = true
+        return next
+      })
+      if (!shouldScheduleRemoval) return
+      const existing = timeoutsRef.current.get(id)
+      if (existing?.autoCloseId) clearTimeout(existing.autoCloseId)
+      if (existing?.removeId) {
+        timeoutsRef.current.set(id, {autoCloseId: null, removeId: existing.removeId})
+        return
+      }
+      const removeId = setTimeout(() => finalizeToastRemoval(id), TOAST_EXIT_DURATION_MS)
+      timeoutsRef.current.set(id, {autoCloseId: null, removeId})
+    },
+    [finalizeToastRemoval, getToastExitMetrics],
+  )
 
   useEffect(() => {
     // Subscribe to the service so any layer can push notifications without UI coupling.
     const unsubscribe = notificationService.subscribe((payload) => {
       const id = createToastId()
-      setToasts((current) => [...current, {...payload, id}])
-      const timeoutId = setTimeout(() => removeToast(id), autoCloseMs)
-      timeoutsRef.current.set(id, timeoutId)
+      setToasts((current) => [...current, {...payload, id, isExiting: false}])
+      const autoCloseDelayMs = Math.max(0, autoCloseMs - TOAST_EXIT_DURATION_MS)
+      // Start the exit a bit earlier so total lifetime matches the existing auto-close.
+      const autoCloseId = setTimeout(() => beginToastExit(id), autoCloseDelayMs)
+      timeoutsRef.current.set(id, {autoCloseId, removeId: null})
     })
 
     return () => {
       unsubscribe()
-      timeoutsRef.current.forEach((timeoutId) => clearTimeout(timeoutId))
+      timeoutsRef.current.forEach((timeouts) => {
+        if (timeouts.autoCloseId) clearTimeout(timeouts.autoCloseId)
+        if (timeouts.removeId) clearTimeout(timeouts.removeId)
+      })
       timeoutsRef.current.clear()
     }
-  }, [autoCloseMs, removeToast])
+  }, [autoCloseMs, beginToastExit])
 
   const contextValue = useMemo(
     () => ({
@@ -82,17 +132,36 @@ export const NotificationProvider = ({children, autoCloseMs = 3500}) => {
               : detailedMessage
               ? [detailedMessage.title, ...bodyLines].join(' ')
               : ''
+          const exitStyle =
+            toast.isExiting && toast.exitOffsetTop != null
+              ? {
+                  position: 'absolute',
+                  top: `${toast.exitOffsetTop}px`,
+                  right: 0,
+                  width: toast.exitWidth ? `${toast.exitWidth}px` : undefined,
+                }
+              : undefined
+
           return (
             <div
               key={toast.id}
+              ref={(node) => {
+                if (node) toastRefs.current.set(toast.id, node)
+                else toastRefs.current.delete(toast.id)
+              }}
+              style={exitStyle}
               className={
                 isProductAdded || isWinnerNotified
-                  ? 'w-[360px] max-w-[92vw] rounded-[6px] border border-[#6BD97F] bg-[#D7FBE0] px-4 py-3 shadow-[0_4px_10px_rgba(0,0,0,0.15)]'
+                  ? `w-[360px] max-w-[92vw] rounded-[6px] border border-[#6BD97F] bg-[#D7FBE0] px-4 py-3 shadow-[0_4px_10px_rgba(0,0,0,0.15)] ${
+                      toast.isExiting ? 'toast-exit' : 'toast-enter'
+                    }`
                   : isProductDeleted
-                  ? 'w-[360px] max-w-[92vw] rounded-[6px] border border-[#E7A0A0] bg-[#F4C6C6] px-4 py-3 shadow-[0_4px_10px_rgba(0,0,0,0.15)]'
+                  ? `w-[360px] max-w-[92vw] rounded-[6px] border border-[#E7A0A0] bg-[#F4C6C6] px-4 py-3 shadow-[0_4px_10px_rgba(0,0,0,0.15)] ${
+                      toast.isExiting ? 'toast-exit' : 'toast-enter'
+                    }`
                   : `min-w-[260px] max-w-sm rounded-lg px-4 py-3 shadow-lg ${getToastStyles(
                       toast.type,
-                    )}`
+                    )} ${toast.isExiting ? 'toast-exit' : 'toast-enter'}`
               }
             >
               {isProductAdded || isWinnerNotified ? (
@@ -125,7 +194,7 @@ export const NotificationProvider = ({children, autoCloseMs = 3500}) => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => removeToast(toast.id)}
+                    onClick={() => beginToastExit(toast.id)}
                     className="mt-0.5 text-[#2F8E3A] transition-colors hover:text-[#23712F]"
                     aria-label="Cerrar notificación"
                   >
@@ -182,7 +251,7 @@ export const NotificationProvider = ({children, autoCloseMs = 3500}) => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => removeToast(toast.id)}
+                    onClick={() => beginToastExit(toast.id)}
                     className="mt-0.5 text-[#D05252] transition-colors hover:text-[#B94646]"
                     aria-label="Cerrar notificación"
                   >
@@ -207,7 +276,7 @@ export const NotificationProvider = ({children, autoCloseMs = 3500}) => {
                   <div className="text-sm font-medium">{fallbackMessage}</div>
                   <button
                     type="button"
-                    onClick={() => removeToast(toast.id)}
+                    onClick={() => beginToastExit(toast.id)}
                     className="text-gray-400 hover:text-gray-600 text-lg leading-none"
                     aria-label="Cerrar notificación"
                   >
