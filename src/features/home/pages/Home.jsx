@@ -12,7 +12,8 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto py-8 px-10">
+      {/* Fixed max width keeps the desktop layout from stretching on wide screens. */}
+      <div className="mx-auto w-full max-w-[1440px] py-8 px-10">
         <Header />
         <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
         <TabContent activeTab={activeTab} />
