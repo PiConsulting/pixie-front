@@ -84,16 +84,16 @@ const AnunciosContent = () => {
 
         {/* Right column - main panel */}
         <div className="md:col-span-2 h-full min-h-0">
-          <div className="bg-white rounded-xl shadow-sm p-6 h-full flex flex-col">
+          <div className="bg-white rounded-xl shadow-sm h-full flex flex-col">
             {!isCreating ? (
               <div className="max-w-2xl w-full text-center mx-auto flex flex-col justify-center h-full">
                 <h3 className="text-xl font-semibold text-gray-900 pt-6">
                   Conectá con tu audiencia
                 </h3>
                 <p className="text-gray-600 p-6">
-                  Enviar un mensaje general a tu audiencia te ayuda a mantener la conexión,
-                  reforzar tu presencia y asegurarte de que todos reciban las novedades importantes
-                  al mismo tiempo.
+                  Enviar un mensaje general a tu audiencia te ayuda a mantener la conexión, reforzar
+                  tu presencia y asegurarte de que todos reciban las novedades importantes al mismo
+                  tiempo.
                 </p>
 
                 <div className="flex justify-center pb-4">
@@ -120,7 +120,7 @@ const AnunciosContent = () => {
                 </div>
 
                 <div className="flex-1">
-                  <label className="block text-sm pt-6 font-medium text-gray-700 mb-2">
+                  <label className="block text-sm pt-2 font-medium text-gray-700 mb-2">
                     Mensaje
                   </label>
                   <textarea
@@ -133,7 +133,7 @@ const AnunciosContent = () => {
                   </textarea>
                 </div>
 
-                <div className="mt-4 flex justify-center sm:justify-end">
+                <div className="m-1 flex justify-center sm:justify-end">
                   <button
                     onClick={handleSend}
                     className="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white px-4 py-2.5 rounded-md font-medium transition-colors duration-200"
