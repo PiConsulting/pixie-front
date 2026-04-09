@@ -17,7 +17,9 @@ jobs:
           node-version: 20
 
       - name: Build app
-        run: npm install && npm run build
+        run: |
+          npm install
+          npm run build
 
       - name: Deploy to Azure Static Web Apps
         uses: azure/static-web-apps-deploy@v1
@@ -28,3 +30,4 @@ jobs:
           app_location: "/"
           api_location: ""
           output_location: "dist"
+          skip_app_build: true   # 🔥 ESTE ES EL CAMBIO CLAVE
