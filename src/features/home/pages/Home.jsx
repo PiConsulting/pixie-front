@@ -4,11 +4,11 @@ import {useState} from 'react'
 import Header from '../components/Header'
 import TabNavigation from '../components/TabNavigation'
 import TabContent from '../components/TabContent'
-import EventoModal from '../components/tabs/EventoModal'
+// import EventoModal from '../components/tabs/EventoModal'  // Evento fijo: "Connect" — creación deshabilitada
 
 const Home = () => {
-  const [activeTab, setActiveTab] = useState('sorteos')
-  const [showEventoModal, setShowEventoModal] = useState(true)
+  const [activeTab, setActiveTab] = useState('Asistentes')
+  // const [showEventoModal, setShowEventoModal] = useState(true)  // Evento fijo: modal de creación deshabilitado
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -17,7 +17,7 @@ const Home = () => {
         <Header />
         <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
         <TabContent activeTab={activeTab} />
-        <EventoModal isOpen={showEventoModal} onClose={() => setShowEventoModal(false)} />
+        {/* <EventoModal isOpen={showEventoModal} onClose={() => setShowEventoModal(false)} /> */}
       </div>
     </div>
   )

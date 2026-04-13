@@ -5,7 +5,7 @@ const Header = () => {
       <div className="flex flex-col lg:flex-row items-stretch justify-between gap-6">
         <div className="flex-1 flex flex-col justify-end pb-6 lg:pb-8">
           <p className="text-dark text-sm font-medium mb-1">Pi Data Strategy & Consulting</p>
-          <h1 className="text-dark text-3xl font-bold">Datazón</h1>
+          <h1 className="text-dark text-3xl font-bold">Connect</h1>
         </div>
 
         <div className="flex items-center gap-4 relative w-full lg:w-auto">

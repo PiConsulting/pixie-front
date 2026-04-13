@@ -1,7 +1,9 @@
 import {useState} from 'react'
 import SectionLayout from '../SectionLayout'
+import {useLocalStorage} from '../../../../core/hooks/useLocalStorage'
+import {EVENT_ID} from '../../../../lib/api'
+// import apiClient from '../../../../lib/api'  // descomentar al activar envío real
 
-// Megaphone icon for announcements (replaces the previous glyph).
 const MegaphoneIcon = ({className}) => (
   <svg
     className={className}
@@ -24,31 +26,39 @@ const MegaphoneIcon = ({className}) => (
 const AnunciosContent = () => {
   const [isCreating, setIsCreating] = useState(false)
   const [message, setMessage] = useState('')
-  const [audience, setAudience] = useState('all')
-  const [history, setHistory] = useState([])
-
-  const sampleHistory = [
-    {id: 1, text: 'En 5 min comienza la charla acerca...', time: 'Ahora'},
-    {id: 2, text: 'Nos tomamos un descanso de 15...', time: 'Hace 1h'},
-    {id: 3, text: 'Bienvenidos a Datazón 2025...', time: 'Ayer'},
-  ]
+  const [history, setHistory] = useLocalStorage('anuncios-historial', [])
+  const [sent, setSent] = useState(false)
 
   const handleCreate = () => {
     setIsCreating(true)
-    // populate simulated history when entering create mode
-    setHistory(sampleHistory)
   }
 
   const handleSend = () => {
     if (!message.trim()) return
+
+    // ─── Para activar el envío real, descomentar el bloque siguiente ──────────
+    // Envía el mensaje a todos los participantes del evento "Connect".
+    //
+    // apiClient
+    //   .post(`/message/${EVENT_ID}`, {
+    //     message: message.trim(),
+    //   })
+    //   .then(() => {
+    //     const newItem = {id: Date.now(), text: message.trim(), time: 'Ahora'}
+    //     setHistory((h) => [newItem, ...h])
+    //     setMessage('')
+    //   })
+    //   .catch((err) => console.error('[Mensaje masivo]', err))
+    // return
+    // ─────────────────────────────────────────────────────────────────────────
     const newItem = {id: Date.now(), text: message.trim(), time: 'Ahora'}
     setHistory((h) => [newItem, ...h])
     setMessage('')
+    setSent(true)
   }
 
   return (
     <SectionLayout className="flex flex-col">
-      {/* Responsive: let the panel grow on mobile while keeping desktop height. */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch flex-1 min-h-0">
         {/* Left column - historial */}
         <div className="md:col-span-1 h-full min-h-0">
@@ -106,34 +116,18 @@ const AnunciosContent = () => {
                 </div>
               </div>
             ) : (
-              <div className="w-full flex flex-col">
-                <div className="">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Para</label>
-                  <select
-                    value={audience}
-                    onChange={(e) => setAudience(e.target.value)}
-                    className="block w-full border border-gray-200 rounded-md p-2 text-sm"
-                  >
-                    <option value="all">Todos los asistentes</option>
-                    <option value="speakers">Asistentes acreditados</option>
-                  </select>
-                </div>
-
+              <div className="w-full p-4 flex flex-col gap-3">
                 <div className="flex-1">
-                  <label className="block text-sm pt-2 font-medium text-gray-700 mb-2">
-                    Mensaje
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Mensaje</label>
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    className="w-full h-32 border border-gray-200 rounded-md p-3 text-sm resize-none"
+                    className="w-full h-32 border border-gray-200 rounded-md p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
                     placeholder="Escribir anuncio..."
-                  >
-                    {message}
-                  </textarea>
+                  />
                 </div>
 
-                <div className="m-1 flex justify-center sm:justify-end">
+                <div className="flex justify-center sm:justify-end">
                   <button
                     onClick={handleSend}
                     className="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white px-4 py-2.5 rounded-md font-medium transition-colors duration-200"
@@ -146,6 +140,34 @@ const AnunciosContent = () => {
           </div>
         </div>
       </div>
+
+      {sent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+              <svg
+                className="w-6 h-6 text-green-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900">Anuncio enviado</h3>
+            <p className="text-sm text-gray-500 text-center">
+              El mensaje fue enviado a todos los participantes del evento Connect.
+            </p>
+            <button
+              onClick={() => setSent(false)}
+              className="px-6 py-2 rounded-lg text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition-colors"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
     </SectionLayout>
   )
 }

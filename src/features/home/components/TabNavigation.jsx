@@ -2,7 +2,7 @@
 
 const tabs = [
   {id: 'asistentes', label: 'Asistentes'},
-  {id: 'sorteos', label: 'Sorteos'},
+  // {id: 'sorteos', label: 'Sorteos'},
   {id: 'anuncios', label: 'Anuncios'},
 ]
 
@@ -12,9 +12,7 @@ const TabNavigation = ({activeTab, onTabChange}) => {
   return (
     <div className="flex justify-center mb-8">
       {/* Responsive: allow full-width tab bar on small screens for comfortable tapping. */}
-      <div
-        className="relative inline-flex w-full max-w-[350px] items-center rounded-full bg-[#f6ecd9] overflow-hidden h-9 sm:h-[26px]"
-      >
+      <div className="relative inline-flex w-full max-w-[350px] items-center rounded-full bg-[#f6ecd9] overflow-hidden h-9 sm:h-[26px]">
         {/* sliding indicator */}
         <div
           aria-hidden
