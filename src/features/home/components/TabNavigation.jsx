@@ -2,7 +2,7 @@
 
 const tabs = [
   {id: 'asistentes', label: 'Asistentes'},
-  // {id: 'sorteos', label: 'Sorteos'},
+  {id: 'sorteos', label: 'Sorteos'},
   {id: 'anuncios', label: 'Anuncios'},
 ]
 

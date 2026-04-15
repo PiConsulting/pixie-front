@@ -6,6 +6,6 @@ export const APP_CONFIG = {
 
 export const TABS = {
   ASISTENTES: 'asistentes',
-  // SORTEOS: 'sorteos',
+  SORTEOS: 'sorteos',
   ANUNCIOS: 'anuncios',
 }

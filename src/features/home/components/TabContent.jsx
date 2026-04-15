@@ -7,8 +7,8 @@ const TabContent = ({activeTab}) => {
     switch (activeTab) {
       case 'asistentes':
         return <AsistentesContent />
-      // case 'sorteos':
-      //   return <SorteosContent />
+      case 'sorteos':
+        return <SorteosContent />
       case 'anuncios':
         return <AnunciosContent />
       default:

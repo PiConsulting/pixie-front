@@ -1,693 +1,305 @@
-import React, {useState, useRef, useEffect} from 'react'
+import {useEffect, useState} from 'react'
 import SectionLayout from '../SectionLayout'
-import WinnerModal from './WinnerModal'
-import {useNotifications} from '../../../../notifications/NotificationProvider'
-import {notificationMessages} from '../../../../notifications/notifications.messages'
+import {EVENT_ID} from '../../../../lib/api'
+import apiClient from '../../../../lib/api'
 
-const SorteosContent = () => {
-  const [file, setFile] = useState(null)
-  const [preview, setPreview] = useState(null)
-  const inputRef = useRef(null)
+// ─── Modal ganador ─────────────────────────────────────────────────────────────
+const WinnerModal = ({winner, productName, onClose}) => {
+  const [notified, setNotified] = useState(false)
+  const [notifying, setNotifying] = useState(false)
 
-  const [productName, setProductName] = useState('')
-  const [participants, setParticipants] = useState('Todos los asistentes')
-  const [notification, setNotification] = useState(
-    '¡Felicitaciones! Ganaste [item] pasa por el stand 2 a retirar tu premio.',
+  const handleNotify = () => {
+    setNotifying(true)
+
+    // ─── Para activar la notificación real, descomentar el bloque siguiente ───
+    // apiClient
+    //   .post(`/notify/winner`, {
+    //     winner_id: winner.winner_id,
+    //     product_id: winner.product_id,
+    //   })
+    //   .then(() => setNotified(true))
+    //   .catch((err) => console.error('[Notificar ganador]', err))
+    //   .finally(() => setNotifying(false))
+    // return
+    // ─────────────────────────────────────────────────────────────────────────
+
+    console.log('[Notificar ganador simulado]', winner)
+    setTimeout(() => {
+      setNotified(true)
+      setNotifying(false)
+    }, 800)
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      style={{animation: 'fadeIn 0.2s ease-out'}}
+    >
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.65) } to { opacity: 1; transform: scale(1) } }
+        @keyframes floatBounce { 0%, 100% { transform: translateY(0px) } 50% { transform: translateY(-14px) } }
+      `}</style>
+      <div
+        className="relative flex flex-col items-center w-full max-w-sm"
+        style={{animation: 'popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'}}
+      >
+        {/* imagen flotando por encima del card */}
+        <img
+          src="/celebracion.png"
+          alt="Celebración"
+          className="relative z-10 w-56 h-auto pointer-events-none"
+          style={{marginBottom: '-4.5rem', animation: 'floatBounce 2.2s ease-in-out infinite'}}
+        />
+        <div className="bg-white rounded-2xl shadow-2xl w-full pt-20 pb-6 px-6 flex flex-col items-center gap-4 text-center">
+          <h3 className="text-xl font-bold text-gray-900">¡Tenemos un ganador!</h3>
+          <p className="text-2xl font-semibold text-blue-600">
+            {winner.winner_name} {winner.winner_last_name}
+          </p>
+          <p className="text-sm text-gray-500">
+            Premio: <span className="font-medium text-gray-700">{productName}</span>
+          </p>
+
+          {notified ? (
+            <p className="text-sm text-green-600 font-medium">
+              El ganador fue notificado sobre su premio.
+            </p>
+          ) : (
+            <button
+              onClick={handleNotify}
+              disabled={notifying}
+              className="w-full flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium text-white bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {notifying ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Notificando...
+                </>
+              ) : (
+                'Notificar al ganador'
+              )}
+            </button>
+          )}
+
+          <button
+            onClick={onClose}
+            className="w-full px-6 py-2.5 rounded-xl text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition-colors"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
   )
-  const [formMode, setFormMode] = useState('create')
-  const [showIntro, setShowIntro] = useState(true)
-  const [generated, setGenerated] = useState(false)
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [sorteado, setSorteado] = useState(false)
+}
+
+// ─── Overlay animado mientras se sortea ────────────────────────────────────────
+const WHEEL_COLORS = [
+  '#ef4444',
+  '#f97316',
+  '#eab308',
+  '#22c55e',
+  '#3b82f6',
+  '#8b5cf6',
+  '#ec4899',
+  '#14b8a6',
+]
+const SEGMENTS = 8
+
+const DrawingOverlay = () => (
+  <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/60">
+    <style>{`
+      @keyframes wheelSpin {
+        from { transform: rotate(0deg) }
+        to   { transform: rotate(360deg) }
+      }
+      @keyframes pointerWiggle {
+        0%, 100% { transform: translateX(-50%) rotate(-20deg) }
+        50%       { transform: translateX(-50%) rotate(20deg) }
+      }
+      @keyframes dotPulse {
+        0%, 80%, 100% { opacity: 0.3; transform: scale(0.75) }
+        40%           { opacity: 1;   transform: scale(1.3)  }
+      }
+    `}</style>
+
+    {/* Ruleta */}
+    <div className="relative" style={{width: 220, height: 220}}>
+      {/* Puntero arriba */}
+      <div
+        className="absolute top-0 left-1/2 z-10"
+        style={{
+          width: 0,
+          height: 0,
+          borderLeft: '14px solid transparent',
+          borderRight: '14px solid transparent',
+          borderTop: '28px solid #fbbf24',
+          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+          animation: 'pointerWiggle 0.25s ease-in-out infinite',
+          transformOrigin: 'top center',
+        }}
+      />
+
+      {/* Rueda que gira */}
+      <div
+        className="rounded-full overflow-hidden border-4 border-white shadow-2xl"
+        style={{
+          width: 220,
+          height: 220,
+          background: `conic-gradient(${WHEEL_COLORS.map(
+            (c, i) => `${c} ${(i / SEGMENTS) * 360}deg ${((i + 1) / SEGMENTS) * 360}deg`,
+          ).join(', ')})`,
+          animation: 'wheelSpin 0.45s linear infinite',
+        }}
+      >
+        {/* Líneas divisorias */}
+        {Array.from({length: SEGMENTS}).map((_, i) => (
+          <div
+            key={i}
+            className="absolute top-1/2 left-1/2 origin-left"
+            style={{
+              width: '50%',
+              height: 2,
+              background: 'rgba(255,255,255,0.4)',
+              transform: `rotate(${(i / SEGMENTS) * 360}deg)`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Centro */}
+      <div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg"
+        style={{width: 40, height: 40}}
+      />
+    </div>
+
+    {/* Texto */}
+    <p className="mt-7 text-white text-2xl font-bold tracking-wide flex items-center gap-0.5">
+      Sorteando
+      <span style={{animation: 'dotPulse 1s ease-in-out infinite', animationDelay: '0s'}}>.</span>
+      <span style={{animation: 'dotPulse 1s ease-in-out infinite', animationDelay: '0.18s'}}>
+        .
+      </span>
+      <span style={{animation: 'dotPulse 1s ease-in-out infinite', animationDelay: '0.36s'}}>
+        .
+      </span>
+    </p>
+  </div>
+)
+
+// ─── Pantalla principal de Sorteos ────────────────────────────────────────────
+const SorteosContent = () => {
+  // ── Productos ──────────────────────────────────────────────────────────────
   const [products, setProducts] = useState([])
-  const [selectedProductIndex, setSelectedProductIndex] = useState(0)
-  const [slideDirection, setSlideDirection] = useState('next')
-  const {notifySuccess, notifyError, notifyInfo} = useNotifications()
-  const generateTimeoutRef = useRef(null)
-  const prevProduct = () => {
-    if (products.length === 0) return
-    setSlideDirection('prev')
-    setSelectedProductIndex((i) => (i - 1 + products.length) % products.length)
-  }
-  const nextProduct = () => {
-    if (products.length === 0) return
-    setSlideDirection('next')
-    setSelectedProductIndex((i) => (i + 1) % products.length)
-  }
-  const handleDeleteProduct = () => {
-    if (products.length === 0) return
-    const newArr = products.filter((_, idx) => idx !== selectedProductIndex)
-    const newLen = newArr.length
-    setProducts(newArr)
-    setSelectedProductIndex(newLen === 0 ? 0 : Math.min(selectedProductIndex, newLen - 1))
-    if (newLen === 0) setGenerated(false)
-
-    let didError = false
-    try {
-      localStorage.setItem('sorteos_pending', JSON.stringify(newArr))
-    } catch (err) {
-      console.error('Error actualizando pendientes al eliminar', err)
-      didError = true
-      notifyError(notificationMessages.genericError)
-    }
-    if (!didError) notifyInfo(notificationMessages.productDeleted)
-  }
+  const [productsLoading, setProductsLoading] = useState(true)
+  const [selectedProductId, setSelectedProductId] = useState(null)
 
   useEffect(() => {
-    if (!file) {
-      if (formMode === 'edit') return
-      setPreview(null)
-      return
-    }
-    const objectUrl = URL.createObjectURL(file)
-    setPreview(objectUrl)
-    return () => URL.revokeObjectURL(objectUrl)
-  }, [file, formMode])
-
-  useEffect(() => {
-    return () => {
-      if (generateTimeoutRef.current) {
-        clearTimeout(generateTimeoutRef.current)
-      }
-    }
+    apiClient
+      .get(`/product`)
+      .then((res) => {
+        const list = (res.data?.products ?? []).filter((p) => p.winner_id == null)
+        setProducts(list)
+        setSelectedProductId(list[0]?.id ?? null)
+      })
+      .catch((err) => console.error('[Productos]', err))
+      .finally(() => setProductsLoading(false))
   }, [])
 
-  const onDrop = (e) => {
-    e.preventDefault()
-    const dropped = e.dataTransfer.files && e.dataTransfer.files[0]
-    if (dropped) setFile(dropped)
-  }
-
-  const onSelect = (e) => {
-    const f = e.target.files && e.target.files[0]
-    if (f) setFile(f)
-  }
-
-  const openFilePicker = () => inputRef.current && inputRef.current.click()
-
-  const fileToDataUrl = (file) => {
-    return new Promise((resolve, reject) => {
-      if (!file) return resolve(null)
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result)
-      reader.onerror = (err) => reject(err)
-      reader.readAsDataURL(file)
-    })
-  }
-
-  const handleGenerate = async (e) => {
-    e.preventDefault()
-    if (formMode === 'edit') {
-      if (!productName.trim()) {
-        return alert('Por favor ingresá el nombre del producto.')
-      }
-      let imageData = null
-      try {
-        imageData = await fileToDataUrl(file)
-      } catch (err) {
-        console.error('Error convirtiendo imagen:', err)
-        notifyError(notificationMessages.genericError)
-      }
-      const current = products[selectedProductIndex]
-      const updated = {
-        ...current,
-        productName,
-        participants,
-        notification,
-        image: imageData || current?.image,
-        preview: imageData || current?.preview || current?.image,
-      }
-      const updatedProducts = products.map((item, idx) =>
-        idx === selectedProductIndex ? updated : item,
-      )
-      setProducts(updatedProducts)
-      try {
-        localStorage.setItem('sorteos_pending', JSON.stringify(updatedProducts))
-      } catch (err) {
-        console.error('Error guardando edición en localStorage', err)
-        notifyError(notificationMessages.genericError)
-      }
-      setGenerated(true)
-      setFormMode('create')
-      setFile(null)
-      setPreview(null)
-      return
-    }
-    if (!productName.trim() && products.length === 0) {
-      alert(
-        'Por favor ingresá el nombre del producto o añadí al menos un producto antes de generar.',
-      )
-      return
-    }
-    if (isGenerating) return
-    if (generateTimeoutRef.current) {
-      clearTimeout(generateTimeoutRef.current)
-    }
-    const startedAt = Date.now()
-    setIsGenerating(true)
-
-    let imageData = null
-    try {
-      imageData = await fileToDataUrl(file)
-    } catch (err) {
-      console.error('Error convirtiendo imagen:', err)
-    }
-
-    const nuevo = {
-      id: Date.now(),
-      productName,
-      participants,
-      notification,
-      image: imageData,
-    }
-
-    // Si el formulario actual contiene un producto (no fue añadido previamente), lo añadimos y guardamos
-    if (productName.trim()) {
-      // si el producto actual no fue añadido previamente, lo guardamos en pendientes y en final
-      let didError = false
-      try {
-        // mover pendings a final + nuevo
-        const pending = JSON.parse(localStorage.getItem('sorteos_pending') || '[]')
-        const stored = JSON.parse(localStorage.getItem('sorteos') || '[]')
-        // push pending items to final
-        if (Array.isArray(pending) && pending.length > 0) {
-          stored.push(...pending)
-        }
-        // push the current nuevo
-        stored.push(nuevo)
-        localStorage.setItem('sorteos', JSON.stringify(stored))
-        // clear pending
-        localStorage.setItem('sorteos_pending', JSON.stringify([]))
-      } catch (err) {
-        console.error('Error guardando en localStorage', err)
-        didError = true
-        notifyError(notificationMessages.genericError)
-      }
-      setProducts((p) => [...p, nuevo])
-      if (!didError) notifySuccess(notificationMessages.productAdded)
-    } else {
-      // si no hay producto en el formulario, intentamos mover solo los pendientes a final
-      try {
-        const pending = JSON.parse(localStorage.getItem('sorteos_pending') || '[]')
-        if (Array.isArray(pending) && pending.length > 0) {
-          const stored = JSON.parse(localStorage.getItem('sorteos') || '[]')
-          stored.push(...pending)
-          localStorage.setItem('sorteos', JSON.stringify(stored))
-          localStorage.setItem('sorteos_pending', JSON.stringify([]))
-        }
-      } catch (err) {
-        console.error('Error moviendo pendientes a final', err)
-        notifyError(notificationMessages.genericError)
-      }
-    }
-
-    // resetear inputs del formulario (pero conservar la lista `products` ya guardada)
-    setProductName('')
-    setParticipants('Todos los asistentes')
-    setNotification('¡Felicitaciones! Ganaste [item] pasa por el stand 2 a retirar tu premio.')
-    setFile(null)
-
-    // al generar un nuevo sorteo, resetear flag de "sorteado" y marcar generated
-    const completeGenerate = () => {
-      setSorteado(false)
-      setSelectedProductIndex(0)
-      setGenerated(true)
-      setIsGenerating(false)
-      generateTimeoutRef.current = null
-    }
-    const elapsed = Date.now() - startedAt
-    const remaining = Math.max(0, 350 - elapsed)
-    generateTimeoutRef.current = setTimeout(completeGenerate, remaining)
-  }
-
-  const handleEdit = () => {
-    if (!currentProduct) return
-    setFormMode('edit')
-    setGenerated(false)
-    setIsGenerating(false)
-    setProductName(currentProduct.productName || '')
-    setParticipants(currentProduct.participants || 'Todos los asistentes')
-    setNotification(
-      currentProduct.notification ||
-        '¡Felicitaciones! Ganaste [item] pasa por el stand 2 a retirar tu premio.',
-    )
-    setFile(null)
-    setPreview(currentProduct.image || currentProduct.preview || null)
-  }
+  // ── Sorteo ─────────────────────────────────────────────────────────────────
+  const [drawing, setDrawing] = useState(false)
+  const [winner, setWinner] = useState(null)
   const [showWinnerModal, setShowWinnerModal] = useState(false)
-  const [winnerName, setWinnerName] = useState(null)
-  const [showResortConfirm, setShowResortConfirm] = useState(false)
 
-  // cargar pendientes guardados al montar
-  useEffect(() => {
-    try {
-      const pending = JSON.parse(localStorage.getItem('sorteos_pending') || '[]')
-      if (Array.isArray(pending) && pending.length > 0) {
-        setProducts(pending)
-      }
-    } catch (e) {
-      // ignore
-    }
-  }, [])
+  const selectedProduct = products.find((p) => p.id === selectedProductId)
 
-  const sampleAttendees = [
-    'Ana López',
-    'Carlos Pérez',
-    'María Gómez',
-    'Juan Martínez',
-    'Lucía Fernández',
-  ]
+  const handleDraw = () => {
+    if (!selectedProductId) return
+    setDrawing(true)
 
-  const startDraw = () => {
-    // elegir un ganador aleatorio de la lista simulada
-    const idx = Math.floor(Math.random() * sampleAttendees.length)
-    setWinnerName(sampleAttendees[idx])
-    setShowWinnerModal(true)
+    apiClient
+      .post(`/lottery/product/${selectedProductId}/draw`)
+      .then((res) => {
+        setWinner(res.data?.winner)
+        setShowWinnerModal(true)
+      })
+      .catch((err) => console.error('[Sorteo]', err))
+      .finally(() => setDrawing(false))
   }
-
-  // imagen y nombre que se muestran en la vista generada (seleccionable)
-  const displayImage =
-    products.length > 0
-      ? products[selectedProductIndex]?.image || products[selectedProductIndex]?.preview
-      : preview
-  const displayProductName =
-    products.length > 0 ? products[selectedProductIndex]?.productName : productName
-  const displayParticipants =
-    products.length > 0 ? products[selectedProductIndex]?.participants : participants
-  const currentProduct = products.length > 0 ? products[selectedProductIndex] : null
-  const slideClass = slideDirection === 'prev' ? 'product-swap-prev' : 'product-swap-next'
 
   return (
     <>
-      <SectionLayout
-        className="flex items-center justify-center overflow-hidden lg:overflow-visible"
-        aria-busy={isGenerating ? 'true' : 'false'}
-      >
-        {/* Responsive: reduce padding and prevent horizontal overflow on small screens. */}
-        <div className="w-full">
-          {!generated ? (
-            isGenerating ? (
-              <div className="px-4 sorteo-panel-enter">
-                <div className="relative flex flex-col sm:flex-row items-center gap-6 sm:gap-10 w-full min-h-[260px]">
-                  <div className="w-40 h-40 sm:w-56 sm:h-56 rounded-lg bg-gray-100 overflow-hidden relative">
-                    <div className="absolute inset-0 sorteo-shimmer" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <span className="h-5 w-5 rounded-full border-2 border-blue-500 border-t-transparent animate-spin motion-reduce:animate-none" />
-                      <div>
-                        <div className="text-sm font-semibold text-gray-900">
-                          Generando sorteo...
-                        </div>
-                        <div className="text-xs text-gray-500">Preparando la vista del premio</div>
-                      </div>
-                    </div>
-                    <div className="mt-6 space-y-3">
-                      <div className="relative h-3 w-32 rounded bg-gray-100 overflow-hidden">
-                        <div className="absolute inset-0 sorteo-shimmer" />
-                      </div>
-                      <div className="relative h-4 w-56 rounded bg-gray-100 overflow-hidden">
-                        <div className="absolute inset-0 sorteo-shimmer" />
-                      </div>
-                      <div className="relative h-3 w-40 rounded bg-gray-100 overflow-hidden">
-                        <div className="absolute inset-0 sorteo-shimmer" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleGenerate}>
-                {formMode === 'edit' && (
-                  <div className="mb-4">
-                    <h4 className="text-lg font-semibold text-gray-900">Editar producto</h4>
-                  </div>
-                )}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                  <div
-                    className="col-span-1 bg-gray-100 rounded-lg h-48 sm:h-64 flex items-center justify-center border-2 border-dashed border-gray-300 text-gray-500 cursor-pointer overflow-hidden"
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={onDrop}
-                    onClick={openFilePicker}
-                    role="button"
-                    aria-label="Subir imagen premio"
-                  >
-                    {preview ? (
-                      <img
-                        src={preview}
-                        alt="Preview"
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    ) : (
-                      <div className="text-center px-4">
-                        <p className="font-medium">Subí o arrastra tu archivo acá</p>
-                        <p className="text-sm text-gray-500 mt-2">PNG, JPG, GIF — hasta 5MB</p>
-                      </div>
-                    )}
-                    <input
-                      ref={inputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={onSelect}
-                    />
-                  </div>
+      <SectionLayout className="flex flex-col items-center">
+        <div className="w-full max-w-md flex flex-col gap-6">
+          <h2 className="text-2xl font-bold text-gray-900 text-center">Sorteos — Connect</h2>
 
-                  <div className="col-span-2">
-                    <div className="flex flex-col gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Nombre del producto
-                        </label>
-                        <input
-                          value={productName}
-                          onChange={(e) => setProductName(e.target.value)}
-                          className="mt-1 block w-full sm:w-1/2 border border-gray-300 rounded px-3 py-2"
-                          placeholder="Ingresa el nombre del producto a sortear"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Participan
-                        </label>
-                        <select
-                          value={participants}
-                          onChange={(e) => setParticipants(e.target.value)}
-                          className="mt-1 block w-full sm:w-1/2 border border-gray-300 rounded px-3 py-2"
-                        >
-                          <option>Todos los asistentes</option>
-                          <option>Asistentes acreditados</option>
-                        </select>
-                      </div>
-                      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-                        {formMode === 'create' && (
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              // Añadir producto temporal a la lista (convierte imagen a dataURL si existe)
-                              if (!productName.trim())
-                                return alert('Por favor ingresá el nombre del producto.')
-                              let imageData = null
-                              let didError = false
-                              try {
-                                imageData = await fileToDataUrl(file)
-                              } catch (err) {
-                                console.error('Error convirtiendo imagen al añadir producto:', err)
-                              }
-                              const id = Date.now()
-                              const item = {
-                                id,
-                                productName,
-                                participants,
-                                notification,
-                                // prefer data URL preview (stable) if available
-                                preview: imageData || preview,
-                                image: imageData,
-                              }
-                              setProducts((p) => [...p, item])
-                              // guardar inmediatamente en localStorage (pendientes)
-                              try {
-                                const stored = JSON.parse(
-                                  localStorage.getItem('sorteos_pending') || '[]',
-                                )
-                                stored.push(item)
-                                localStorage.setItem('sorteos_pending', JSON.stringify(stored))
-                              } catch (err) {
-                                console.error(
-                                  'Error guardando en localStorage al añadir producto',
-                                  err,
-                                )
-                                didError = true
-                                notifyError(notificationMessages.genericError)
-                              }
-                              if (!didError) notifySuccess(notificationMessages.productAdded)
-                              // reset inputs for next product
-                              setProductName('')
-                              setParticipants('Todos los asistentes')
-                              setNotification(
-                                '¡Felicitaciones! Ganaste [item] pasa por el stand 2 a retirar tu premio.',
-                              )
-                              setFile(null)
-                            }}
-                            className="relative z-10 mt-10 inline-flex h-10 w-full sm:w-48 items-center justify-center rounded-lg border-2 border-blue-500 bg-white text-sm font-medium text-blue-500 transition-all duration-150 hover:bg-blue-100 hover:border-blue-00 hover:text-blue-700 hover:shadow-md hover:ring-2 hover:ring-blue-200"
-                          >
-                            <span className="text-sm ">Añadir producto</span>
-                          </button>
-                        )}
-                        <button
-                          type="submit"
-                          disabled={isGenerating}
-                          className="relative z-10 mt-10 inline-flex h-10 w-full sm:w-48 items-center justify-center rounded-lg border-2 border-blue-500 bg-blue-600 text-sm font-medium text-white transition-all duration-150 hover:bg-blue-800 hover:border-blue-00 0 hover:shadow-md hover:ring-2 hover:ring-blue-200 sm:mr-10"
-                        >
-                          {formMode === 'edit' ? 'Guardar cambios' : 'Crear sorteo'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </form>
-            )
+          {productsLoading ? (
+            <p className="text-sm text-gray-400 text-center">Cargando productos...</p>
           ) : (
-            <div className="px-4 sorteo-panel-enter">
-              <div className="relative flex flex-col lg:flex-row items-center gap-6 lg:gap-12 overflow-hidden lg:overflow-visible w-full min-h-[260px]">
-                {products.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={prevProduct}
-                    className="absolute left-2 lg:left-[-60px] top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-blue-500 text-white flex items-center justify-center shadow hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed z-30"
-                    aria-label="Anterior producto"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      className="h-5 w-5"
-                    >
-                      <path
-                        d="M15 18l-6-6 6-6"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
-                )}
+            <div className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col">
+              {/* Imagen del producto */}
+              {selectedProduct?.photo_url && (
+                <div className="w-full h-52 overflow-hidden">
+                  <img
+                    src={selectedProduct.photo_url}
+                    alt={selectedProduct.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
 
-                {currentProduct && (
-                  <button
-                    type="button"
-                    onClick={handleDeleteProduct}
-                    className="absolute top-3 right-3 z-40 text-red-500 hover:text-red-600 p-2"
-                    aria-label="Eliminar producto"
+              <div className="p-6 flex flex-col gap-5">
+                {/* Selector */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Producto a sortear
+                  </label>
+                  <select
+                    value={selectedProductId ?? ''}
+                    onChange={(e) => setSelectedProductId(e.target.value)}
+                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-gray-50"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      className="h-6 w-6"
-                    >
-                      <path
-                        d="M5.5 7h13m-9.5-2h6a1 1 0 011 1v1h-8V6a1 1 0 011-1z"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M7 7v11a1 1 0 001 1h8a1 1 0 001-1V7"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M10 10v7m4-7v7"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </button>
-                )}
+                    {products.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-                <div
-                  key={currentProduct?.id ?? selectedProductIndex}
-                  className={`flex flex-1 flex-col lg:flex-row items-center gap-6 lg:gap-12 ${slideClass}`}
+                {/* Botón sortear */}
+                <button
+                  onClick={handleDraw}
+                  disabled={drawing || !selectedProductId}
+                  className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors text-base shadow-sm"
                 >
-                  <div className="w-40 h-40 sm:w-56 sm:h-56 bg-white rounded-lg flex items-center justify-center border-gray-200 overflow-hidden mx-0 sm:mx-14">
-                    {displayImage ? (
-                      <img
-                        src={displayImage}
-                        alt="Producto"
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    ) : (
-                      <div className="text-gray-400 text-sm">No hay imagen</div>
-                    )}
-                  </div>
-
-                  <div className="flex-1 w-full flex items-start gap-6">
-                    <div className="flex flex-col gap-6 mt-4">
-                      <div>
-                        <div className="text-sm text-gray-500">Producto</div>
-                        <div className="text-base font-semibold text-gray-900">
-                          {displayProductName || 'Sin nombre'}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-gray-500">Participan</div>
-                        <div className="text-sm font-semibold text-gray-900">
-                          {displayParticipants}
-                        </div>
-                        <div className="mt-8">
-                          {!sorteado ? (
-                            <button
-                              onClick={handleEdit}
-                              className="relative z-10 inline-flex h-10 w-full sm:w-48 items-center justify-center rounded-lg border-2 border-blue-500 bg-white text-sm font-medium text-blue-500 transition-all duration-150 hover:bg-blue-100 hover:border-blue-00 hover:text-blue-700 hover:shadow-md hover:ring-2 hover:ring-blue-200"
-                            >
-                              Editar producto
-                            </button>
-                          ) : (
-                            <button
-                              disabled
-                              aria-disabled="true"
-                              className="mt-4 inline-flex h-10 w-full sm:w-48 items-center justify-center rounded-md bg-gray-200 text-gray-500 font-medium cursor-not-allowed"
-                            >
-                              Editar producto
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex w-full flex-col items-center gap-3 min-w-[150px] lg:w-auto mt-10">
-                  {!sorteado ? (
-                    <button
-                      onClick={startDraw}
-                      className="static lg:absolute z-10 mt-4 lg:mt-10 inline-flex h-10 w-full sm:w-48 items-center justify-center rounded-lg border-2 border-blue-500 bg-green-600 text-sm font-medium text-white transition-all duration-150 hover:bg-blue-800 hover:border-blue-00 0 hover:shadow-md hover:ring-2 hover:ring-blue-200 lg:mr-20"
-                    >
-                      Sortear
-                    </button>
+                  {drawing ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Sorteando...
+                    </>
                   ) : (
-                    <button
-                      disabled
-                      aria-disabled="true"
-                      className="bg-gray-800 text-white w-full sm:w-auto px-14 py-2 rounded-xl font-medium cursor-not-allowed mt-2 sm:mr-6"
-                    >
-                      Sorteado
-                    </button>
+                    'Sortear'
                   )}
-
-                  {!sorteado ? (
-                    <></>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setShowResortConfirm(true)
-                      }}
-                      className="text-sm text-red-600 font-medium hover:text-red-700"
-                    >
-                      Volver a sortear
-                    </button>
-                  )}
-                </div>
-
-                {products.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={nextProduct}
-                    className="absolute right-2 lg:right-[-60px] top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-blue-500 text-white flex items-center justify-center shadow hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed z-30"
-                    aria-label="Siguiente producto"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      className="h-5 w-5"
-                    >
-                      <path
-                        d="M9 6l6 6-6 6"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
-                )}
+                </button>
               </div>
             </div>
           )}
         </div>
       </SectionLayout>
 
-      {showWinnerModal && (
+      {drawing && <DrawingOverlay />}
+
+      {showWinnerModal && winner && (
         <WinnerModal
-          open={showWinnerModal}
-          onClose={() => setShowWinnerModal(false)}
-          onRetry={() => startDraw()}
-          winnerName={winnerName}
-          productName={displayProductName}
-          onNotify={(notificationText) => {
-            // marcar como sorteado y notificar
-            try {
-              setSorteado(true)
-              notifySuccess(notificationMessages.winnerNotified)
-            } catch (e) {
-              console.error('onNotify parent handler error', e)
-              notifyError(notificationMessages.genericError)
-            }
+          winner={winner}
+          productName={selectedProduct?.name ?? ''}
+          onClose={() => {
+            setShowWinnerModal(false)
+            setWinner(null)
           }}
         />
-      )}
-
-      {/* Confirmación: Estás por sortear un producto nuevamente */}
-      {showResortConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-2xl w-full max-w-xl p-6 shadow-lg">
-            <div className="overflow-hidden rounded-t-xl">
-              {/* Imagen decorativa: usar el mismo robot o placeholder */}
-              <div className="h-32 bg-gradient-to-r from-yellow-200 to-white flex items-center justify-center">
-                <img src="/public/sorpresa.png" alt="alerta" className="h-36 object-contain" />
-              </div>
-            </div>
-
-            <div className="p-4 text-center">
-              <h3 className="text-lg font-semibold">Estás por sortear un producto nuevamente</h3>
-              <p className="text-sm text-gray-600 mt-2">
-                El ganador anterior perderá su premio,{' '}
-                <strong>esta acción no se puede deshacer</strong>.
-              </p>
-
-              <div className="mt-6">
-                <button
-                  onClick={() => {
-                    // confirmar: cerrar modal, reactivar flag y ejecutar sorteo
-                    setShowResortConfirm(false)
-                    setSorteado(false)
-                    startDraw()
-                  }}
-                  className="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-md font-medium shadow"
-                >
-                  Volver a sortear
-                </button>
-              </div>
-
-              <div className="mt-4">
-                <button
-                  onClick={() => setShowResortConfirm(false)}
-                  className="text-sm text-gray-700"
-                >
-                  Volver
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
       )}
     </>
   )
