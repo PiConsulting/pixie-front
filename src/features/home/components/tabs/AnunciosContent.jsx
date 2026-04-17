@@ -55,7 +55,9 @@ const HistoryItem = ({item}) => {
       >
         <MegaphoneIcon className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5 self-start" />
         <div className="flex-1 min-w-0">
-          <p className={`text-sm text-gray-800 break-words ${expanded ? '' : 'truncate'}`}>{item.text}</p>
+          <p className={`text-sm text-gray-800 break-words ${expanded ? '' : 'truncate'}`}>
+            {item.text}
+          </p>
           <p className="text-[11px] text-gray-400 mt-0.5">{item.time}</p>
         </div>
         <svg
