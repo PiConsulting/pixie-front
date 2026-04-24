@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react'
-import apiClient from '../../../../lib/api'
+import apiClient from '../../../../../lib/api'
 
 const StandsModal = ({participant, type, onClose}) => {
   const [items, setItems] = useState([])

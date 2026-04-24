@@ -1,33 +1,104 @@
 import {useEffect, useState} from 'react'
 import SectionLayout from '../SectionLayout'
-import MegaphoneIcon from './MegaphoneIcon'
-import apiClient, {EVENT_ID} from '../../../../lib/api' // descomentar al activar envío real
+import HistorySection from './anuncios/HistorySection'
+import AnunciosContentMainPanel from './anuncios/AnunciosContentMainPanel'
+import apiClient, {EVENT_ID, messagingClient} from '../../../../lib/api'
 
-// ─── Mocks ─────────────────────────────────────────────────────────────────────
-// Reemplazar con GET /templates → { templates: [{ id, name, body }] }
-const MOCK_TEMPLATES = [
+// ─── Plantillas (hardcodeadas) ───────────────────────────────────────────────
+const TEMPLATES = [
   {
     id: 1,
-    name: 'Bienvenida',
-    body: '¡Te damos la bienvenida al evento! Esperamos que disfrutes cada momento.',
+    name: 'Sala Principal',
+    template_name: 'connect_sala_principal',
+    language_code: 'en',
+    body: '🕓 {{horario}} - Sala Principal\n📢 Asegurate tu lugar que se viene una charla de Alto Impacto 🎯',
   },
   {
     id: 2,
-    name: 'Recordatorio de stands',
-    body: 'Hay stands que todavía no visitaste. ¡Te esperamos para que no te pierdas nada!',
+    name: 'Formulario + Sorteos',
+    template_name: 'connect_formulario_sorteos',
+    language_code: 'es_AR',
+    body: '🕓 {{horario}} - Mensaje final: formulario + sorteos\n¡Gracias por ser parte de Connect Legendary Edition!\nAntes de irte, respondé este formulario para contarnos cómo viviste la experiencia y participar de los sorteos 🎁\n📝 {{link}}\nTu feedback es oro para nosotros',
   },
   {
     id: 3,
-    name: 'Cierre del evento',
-    body: 'El evento está llegando a su fin. ¡Gracias por tu presencia y participación!',
+    name: 'Aviso Salas Paralelas',
+    template_name: 'connect_aviso_salas_paralelas',
+    language_code: 'es_AR',
+    body: '📣 {{horario}} - Inicia el siguiente bloque en salas paralelas.\n¡Momento de elegir tu camino! 🔀 Elegí tu favorita y seguimos aprendiendo😎',
+  },
+  {
+    id: 4,
+    name: 'Escenario Principal',
+    template_name: 'connect_escenario_principal',
+    language_code: 'es_AR',
+    body: 'Tomá tu lugar… se viene una jornada histórica ✨\n\nAndá acercándote al Escenario Principal porque en breve comenzamos con la apertura y las primeras charlas 🚀',
+  },
+  {
+    id: 5,
+    name: 'Break + Networking',
+    template_name: 'connect_break_networking',
+    language_code: 'es_AR',
+    body: '☕ Tiempo de break + networking\n\nAprovechá este momento para tomar un cafecito y recorrer la sala de atracciones. No olvides pasar por todos los stands para completar tu colección de camisetas. ¡Una vez completa participas por grandes premios!! 👕⚽',
+  },
+  {
+    id: 6,
+    name: 'Breakout Sessions',
+    template_name: 'connect_breakout_session',
+    language_code: 'es_AR',
+    body: '⚽ ¡Momento de elegir tu próxima jugada!\n\nArrancan las Breakout Sessions en el primer piso.\n\n¿Te ayudo a elegir a qué sala ir?',
+  },
+  {
+    id: 7,
+    name: 'Almuerzo + Networking',
+    template_name: 'connect_almuerzo_networking',
+    language_code: 'en',
+    body: '🍽️ ¡Hora de almorzar!\n\nRecargá energías, conectá con otras personas y preparate para el bloque de la tarde. Hay estaciones de comida con gran variedad de opciones. Pedí lo que mas te guste.',
+  },
+  {
+    id: 8,
+    name: 'Recordatorio Circuito Sponsors',
+    template_name: 'connect_recordatorio_circuito_sponsors',
+    language_code: 'es_AR',
+    body: '¿Ya completaste tu colección de 21 camisetas de argentina? 🇦🇷\n\nRecorre cada stand pidiendo que scaneen tu gafete y participa de sorteos y premios.\n\n¿Quieres que te cuente que otras atracciones y juegos tenemos en el evento?\n\n¿Te interesa saber sobre algún stand de Grupo CEDI?',
+  },
+  {
+    id: 9,
+    name: 'Breakout Sessions Tarde',
+    template_name: 'connect_breakout_sessions',
+    language_code: 'es_AR',
+    body: '🔁 ¡Volvemos al juego!\n\nEn minutos arranca el bloque de la tarde de las Breakout Sessions con nuevas charlas y experiencias.\n\nBuscá tu sala y seguí sumando ideas 💡',
+  },
+  {
+    id: 10,
+    name: 'Regreso Escenario Principal',
+    template_name: 'connect_regreso_escenario_principal',
+    language_code: 'es_AR',
+    body: '🎤 ¡Todos a la Sala Legendaria!\n\nSe viene el tramo final de Connect con grandes momentos:\n\n⚡ Dell + AMD\n🏛️ Suprema Corte\n🏆 Campeonato\n⭐⭐⭐ Entrevista a Pablo Aimar 😱\n\nSe viene un gran cierre ✨',
+  },
+  {
+    id: 11,
+    name: 'Sorteo Final',
+    template_name: 'connect_sorteo_final',
+    language_code: 'es_AR',
+    body: '🎁 Llegó el momento de los sorteos finales.\n\nAntes de cerrar, completá este formulario y participá\n👉 SORTEO | CONNECT Legendary Edition\n\n{{link}}\n\nTu feedback nos ayuda a seguir creciendo ✨',
+  },
+  {
+    id: 12,
+    name: 'After',
+    template_name: 'connect_after',
+    language_code: 'es_AR',
+    body: '🥂 ¡La jornada de charlas termina, pero la experiencia legendaria continua!\n\nQueremos invitarte a celebrar con nosotros los 35 años de innovación de Grupo CEDI en un After con 🍸 Tragos, 🍽️ comida y 🥂 un gran brindis\n\n¡Gracias por acompañarnos una vez más!',
   },
 ]
 
+// ─── Mocks ─────────────────────────────────────────────────────────────────────
+
 // Reemplazar con GET /message-recipients/{event_id} → { recipients: [{ id, label }] }
 const MOCK_RECIPIENTS = [
-  {id: 'all', label: 'Todos los participantes'},
-  {id: 'pending-stands', label: 'Participantes con stands pendientes'},
-  {id: 'visited-all', label: 'Participantes que visitaron todos los stands'},
+  {id: 'Participant', label: 'Participantes'},
+  {id: 'Staff', label: 'Staff'},
+  {id: 'Vendor', label: 'Vendors'},
 ]
 
 // Reemplazar con GET /announcements/{event_id} → { announcements: [{ id, text, time }] }
@@ -42,39 +113,48 @@ const MOCK_HISTORY = [
     text: 'Hay stands que todavía no visitaste. ¡Te esperamos para que no te pierdas nada!',
     time: 'Hace 1 hora',
   },
+  {
+    id: 3,
+    text: 'Recuerda pasar por el stand de innovación para conocer las últimas novedades.',
+    time: 'Hace 50 minutos',
+  },
+  {
+    id: 4,
+    text: '¡Ya comenzó la charla principal en el auditorio! No te la pierdas.',
+    time: 'Hace 30 minutos',
+  },
+  {
+    id: 5,
+    text: 'Participa en la encuesta de satisfacción y gana premios.',
+    time: 'Hace 10 minutos',
+  },
+  {
+    id: 6,
+    text: '¡Gracias por ser parte de este evento! Esperamos verte el próximo año.',
+    time: 'Hace 2 minutos',
+  },
+  {
+    id: 7,
+    text: 'Recuerda que el evento cierra a las 10 PM. ¡Aprovecha hasta el final!',
+    time: 'Hace 1 minuto',
+  },
+  {
+    id: 8,
+    text: '¡Última llamada para visitar el stand de networking! Conectá con otros asistentes.',
+    time: 'Hace 30 segundos',
+  },
+  {
+    id: 9,
+    text: '¡Sorteo sorpresa en 5 minutos! Estén atentos a sus mensajes para participar.',
+    time: 'Hace 10 segundos',
+  },
+  {
+    id: 10,
+    text: '¡Gracias por ser parte de este evento! Esperamos verte el próximo año.',
+    time: 'Hace 5 segundos',
+  },
+  {id: 11, text: '¡Evento cerrado! Nos vemos en la próxima edición. 🎉', time: 'Ahora'},
 ]
-
-const HistoryItem = ({item}) => {
-  const [expanded, setExpanded] = useState(false)
-  return (
-    <li className="border border-gray-100 rounded-lg overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors"
-      >
-        <MegaphoneIcon className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5 self-start" />
-        <div className="flex-1 min-w-0">
-          <p className={`text-sm text-gray-800 break-words ${expanded ? '' : 'truncate'}`}>
-            {item.text}
-          </p>
-          <p className="text-[11px] text-gray-400 mt-0.5">{item.time}</p>
-        </div>
-        <svg
-          className={`w-4 h-4 text-gray-400 flex-shrink-0 self-start mt-1 transition-transform ${expanded ? 'rotate-180' : ''}`}
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-            clipRule="evenodd"
-          />
-        </svg>
-      </button>
-    </li>
-  )
-}
 
 const AnunciosContent = () => {
   const [isCreating, setIsCreating] = useState(false)
@@ -82,26 +162,24 @@ const AnunciosContent = () => {
   const [history, setHistory] = useState([])
   const [historyLoading, setHistoryLoading] = useState(true)
   const [sent, setSent] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [showAllHistory, setShowAllHistory] = useState(false)
 
   // ── Historial ───────────────────────────────────────────────────────────────
   useEffect(() => {
     setHistoryLoading(true)
-    // ─── Reemplazar con llamada real ──────────────────────────────────────────
-    // apiClient.get(`/announcements/${EVENT_ID}`).then((res) => {
-    //   setHistory(res.data.announcements)
-    // }).catch((err) => console.error('[Historial]', err))
-    //   .finally(() => setHistoryLoading(false))
-    setTimeout(() => {
-      setHistory(MOCK_HISTORY)
-      setHistoryLoading(false)
-    }, 400)
-    // ─────────────────────────────────────────────────────────────────────────
+    apiClient
+      .get('/bulk_message_history')
+      .then((res) => {
+        setHistory(res.data.data ?? [])
+      })
+      .catch((err) => console.error('[Historial]', err))
+      .finally(() => setHistoryLoading(false))
   }, [])
 
-  // ── Plantillas ──────────────────────────────────────────────────────────────
-  const [templates, setTemplates] = useState([])
-  const [templatesLoading, setTemplatesLoading] = useState(false)
+  // ── Plantillas (hardcodeadas) ─────────────────────────────────────────────
   const [selectedTemplateId, setSelectedTemplateId] = useState(null)
+  const [templateVars, setTemplateVars] = useState({}) // { varName: value }
 
   // ── Destinatarios ───────────────────────────────────────────────────────────
   const [recipients, setRecipients] = useState([])
@@ -109,72 +187,64 @@ const AnunciosContent = () => {
   const [selectedRecipientId, setSelectedRecipientId] = useState(null)
 
   useEffect(() => {
-    if (!isCreating) return
-
-    setTemplatesLoading(true)
-    setRecipientsLoading(true)
-
-    // ─── Reemplazar con llamada real ──────────────────────────────────────────
-    // apiClient.get('/templates').then((res) => {
-    //   setTemplates(res.data.templates)
-    // }).catch((err) => console.error('[Templates]', err))
-    //   .finally(() => setTemplatesLoading(false))
-    setTimeout(() => {
-      setTemplates(MOCK_TEMPLATES)
-      setTemplatesLoading(false)
-    }, 400)
-    // ─────────────────────────────────────────────────────────────────────────
-
-    // ─── Reemplazar con llamada real ──────────────────────────────────────────
-    // apiClient.get(`/message-recipients/${EVENT_ID}`).then((res) => {
-    //   const list = res.data.recipients
-    //   setRecipients(list)
-    //   setSelectedRecipientId(list[0]?.id ?? null)
-    // }).catch((err) => console.error('[Recipients]', err))
-    //   .finally(() => setRecipientsLoading(false))
-    setTimeout(() => {
-      setRecipients(MOCK_RECIPIENTS)
-      setSelectedRecipientId(MOCK_RECIPIENTS[0].id)
-      setRecipientsLoading(false)
-    }, 400)
-    // ─────────────────────────────────────────────────────────────────────────
-  }, [isCreating])
+    setRecipients(MOCK_RECIPIENTS)
+    setSelectedRecipientId(MOCK_RECIPIENTS[0].id)
+    setRecipientsLoading(false)
+  }, [])
 
   const handleSelectTemplate = (tpl) => {
     setSelectedTemplateId(tpl.id)
     setMessage(tpl.body)
+    const matches = [...tpl.body.matchAll(/\{\{(\w+)\}\}/g)]
+    const vars = {}
+    matches.forEach(([, name]) => {
+      vars[name] = ''
+    })
+    setTemplateVars(vars)
   }
 
-  const canSend = !!message.trim() && !!selectedTemplateId && !!selectedRecipientId
+  // Mensaje con variables sustituidas para el preview
+  const resolvedMessage = Object.entries(templateVars).reduce(
+    (msg, [name, val]) => msg.replaceAll(`{{${name}}}`, val || `{{${name}}}`),
+    message,
+  )
+
+  const allVarsFilled = Object.values(templateVars).every((v) => v.trim() !== '')
+  const canSend = !!message.trim() && !!selectedTemplateId && !!selectedRecipientId && allVarsFilled
 
   const handleSend = () => {
     if (!canSend) return
 
-    // ─── Reemplazar con llamada real para enviar anuncio masivo ──────────────────────────────────────────
-    // apiClient.post(`/message/${EVENT_ID}`, {
-    //   message: message.trim(),
-    //   template_id: selectedTemplateId,
-    //   recipient_group: selectedRecipientId,
-    // }).then(() => {
-    //   const newItem = {id: Date.now(), text: message.trim(), time: 'Ahora'}
-    //   setHistory((h) => [newItem, ...h])
-    //   setMessage('')
-    //   setSelectedTemplateId(null)
-    //   setSent(true)
-    // }).catch((err) => console.error('[Mensaje masivo]', err))
-    // return
-    // ─────────────────────────────────────────────────────────────────────────
-    const newItem = {id: Date.now(), text: message.trim(), time: 'Ahora'}
-    setHistory((h) => [newItem, ...h])
-    setMessage('')
-    setSelectedTemplateId(null)
-    setSent(true)
+    const selectedTemplate = TEMPLATES.find((t) => t.id === selectedTemplateId)
+    setSending(true)
+    messagingClient
+      .post(
+        '/api/send_bulk_template?code=BLtfBxcMcffozm5Qf5O9olVOl7KLSyGOxmngGQxTQhhiAzFuO6ojvA==',
+        {
+          template_name: selectedTemplate?.template_name,
+          language_code: selectedTemplate?.language_code,
+          participant_type: selectedRecipientId,
+          message: resolvedMessage,
+          components: Object.entries(templateVars).map(([name, text]) => ({name, text})),
+        },
+      )
+      .then(() => {
+        const newItem = {id: Date.now(), text: resolvedMessage, time: 'Ahora'}
+        setHistory((h) => [newItem, ...h])
+        setMessage('')
+        setSelectedTemplateId(null)
+        setTemplateVars({})
+        setSent(true)
+      })
+      .catch((err) => console.error('[Mensaje masivo]', err))
+      .finally(() => setSending(false))
   }
 
   const handleCancel = () => {
     setIsCreating(false)
     setMessage('')
     setSelectedTemplateId(null)
+    setTemplateVars({})
   }
 
   return (
@@ -183,140 +253,35 @@ const AnunciosContent = () => {
         {/* Left column - historial */}
         <div className="md:col-span-1 h-full min-h-0">
           <div className="bg-white rounded-xl shadow-sm p-4 text-left flex flex-col h-full">
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">Historial</h4>
-            <div className="flex-1 overflow-visible md:overflow-y-auto pr-2 min-h-0">
-              {historyLoading ? (
-                <p className="text-sm text-gray-400 pt-4">Cargando historial...</p>
-              ) : history.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="text-s pt-20 p-8 text-gray-500 text-center">
-                    Acá se mostrarán los anuncios enviados durante el evento.
-                  </div>
-                </div>
-              ) : (
-                <ul className="space-y-2 p-1">
-                  {history.map((item) => (
-                    <HistoryItem key={item.id} item={item} />
-                  ))}
-                </ul>
-              )}
-            </div>
+            <HistorySection
+              history={history}
+              showAllHistory={showAllHistory}
+              setShowAllHistory={setShowAllHistory}
+              historyLoading={historyLoading}
+            />
           </div>
         </div>
 
         {/* Right column - main panel */}
         <div className="md:col-span-2 h-full min-h-0">
-          <div className="bg-white rounded-xl shadow-sm h-full flex flex-col">
-            {!isCreating ? (
-              <div className="max-w-2xl w-full text-center mx-auto flex flex-col justify-center h-full">
-                <h3 className="text-xl font-semibold text-gray-900 pt-6">
-                  Conectá con tu audiencia
-                </h3>
-                <p className="text-gray-600 p-6">
-                  Enviar un mensaje general a tu audiencia te ayuda a mantener la conexión, reforzar
-                  tu presencia y asegurarte de que todos reciban las novedades importantes al mismo
-                  tiempo.
-                </p>
-                <div className="flex justify-center pb-4">
-                  <button
-                    onClick={() => setIsCreating(true)}
-                    className="m-0 w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-lg font-medium transition-colors duration-200"
-                  >
-                    Crear anuncio
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="w-full p-5 flex flex-col gap-6 overflow-y-auto">
-                {/* Elegir plantilla */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Plantilla <span className="text-red-500">*</span>
-                  </label>
-                  {templatesLoading ? (
-                    <p className="text-sm text-gray-400">Cargando plantillas...</p>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {templates.map((tpl) => (
-                        <button
-                          key={tpl.id}
-                          type="button"
-                          onClick={() => handleSelectTemplate(tpl)}
-                          className={`text-left px-4 py-3 rounded-lg border text-sm transition-colors ${
-                            selectedTemplateId === tpl.id
-                              ? 'border-blue-500 bg-blue-50 text-blue-800'
-                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700'
-                          }`}
-                        >
-                          <p className="font-medium">{tpl.name}</p>
-                          <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{tpl.body}</p>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Mensaje personalizado */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mensaje personalizado
-                  </label>
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    rows={4}
-                    placeholder="Seleccioná una plantilla o escribí tu mensaje..."
-                    className="w-full border border-gray-200 rounded-md p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
-                  />
-                </div>
-
-                {/* Destinatarios */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Enviar a</label>
-                  {recipientsLoading ? (
-                    <p className="text-sm text-gray-400">Cargando destinatarios...</p>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      {recipients.map((r) => (
-                        <label key={r.id} className="flex items-center gap-3 cursor-pointer group">
-                          <input
-                            type="radio"
-                            name="recipient"
-                            value={r.id}
-                            checked={selectedRecipientId === r.id}
-                            onChange={() => setSelectedRecipientId(r.id)}
-                            className="accent-blue-500 w-4 h-4"
-                          />
-                          <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
-                            {r.label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Acciones */}
-                <div className="flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="px-4 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSend}
-                    disabled={!canSend}
-                    className="px-6 py-2 rounded-md text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Enviar anuncio
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          <AnunciosContentMainPanel
+            isCreating={isCreating}
+            TEMPLATES={TEMPLATES}
+            selectedTemplateId={selectedTemplateId}
+            handleSelectTemplate={handleSelectTemplate}
+            templateVars={templateVars}
+            setTemplateVars={setTemplateVars}
+            message={message}
+            resolvedMessage={resolvedMessage}
+            recipients={recipients}
+            recipientsLoading={recipientsLoading}
+            selectedRecipientId={selectedRecipientId}
+            setSelectedRecipientId={setSelectedRecipientId}
+            handleCancel={handleCancel}
+            handleSend={handleSend}
+            canSend={canSend}
+            sending={sending}
+          />
         </div>
       </div>
 

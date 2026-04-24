@@ -1,18 +1,15 @@
-'use client'
+import React from 'react'
 
 const tabs = [
-  {id: 'asistentes', label: 'Asistentes'},
-  {id: 'sorteos', label: 'Sorteos'},
-  {id: 'anuncios', label: 'Anuncios'},
-  {id: 'visitas-stands', label: 'Stands'},
+  {id: 'individual', label: 'Individual'},
+  {id: 'massive', label: 'Masivo'},
 ]
 
-const TabNavigation = ({activeTab, onTabChange}) => {
+export default function SorteosTabNavigation({activeTab, onTabChange}) {
   const activeIndex = tabs.findIndex((t) => t.id === activeTab)
 
   return (
-    <div className="flex justify-center mb-8">
-      {/* Responsive: allow full-width tab bar on small screens for comfortable tapping. */}
+    <div className="flex justify-center">
       <div className="relative inline-flex w-full max-w-[350px] items-center rounded-full bg-[#f6ecd9] overflow-hidden h-9 sm:h-[26px]">
         {/* sliding indicator */}
         <div
@@ -23,8 +20,7 @@ const TabNavigation = ({activeTab, onTabChange}) => {
             transform: `translateX(${(activeIndex >= 0 ? activeIndex : 0) * 100}%)`,
           }}
         />
-
-        {tabs.map((tab, idx) => {
+        {tabs.map((tab) => {
           const active = activeTab === tab.id
           return (
             <button
@@ -42,5 +38,3 @@ const TabNavigation = ({activeTab, onTabChange}) => {
     </div>
   )
 }
-
-export default TabNavigation

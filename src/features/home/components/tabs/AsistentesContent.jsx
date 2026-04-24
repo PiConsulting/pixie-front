@@ -1,16 +1,16 @@
 import {useEffect, useState} from 'react'
 import SectionLayout from '../SectionLayout'
-import apiClient, {EVENT_ID} from '../../../../lib/api'
-import StandsModal from './StandsModal'
-import StandsDropdown from './StandsDropdown'
-import MensajeModal from './MensajeModal'
-import NotifyPendingModal from './NotifyPendingModal'
+import apiClient, {EVENT_ID, messagingClient} from '../../../../lib/api'
+import StandsModal from './asistentes/StandsModal'
+import StandsDropdown from './asistentes/StandsDropdown'
+import MensajeModal from './asistentes/MensajeModal'
+import NotifyPendingModal from './asistentes/NotifyPendingModal'
 
 // ─── Tabs de tipo de asistente ────────────────────────────────────────────────
 const TABS = [
-  {key: 'participant', label: 'Participantes'},
-  {key: 'staff', label: 'Staff'},
-  {key: 'vendor', label: 'Vendors'},
+  {key: 'Participant', label: 'Participantes'},
+  {key: 'Staff', label: 'Staff'},
+  {key: 'Vendor', label: 'Vendors'},
 ]
 
 // ─── Contenido principal ──────────────────────────────────────────────────────
@@ -18,24 +18,41 @@ const AsistentesContent = () => {
   const [participants, setParticipants] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [activeTab, setActiveTab] = useState('participant')
+  const [activeTab, setActiveTab] = useState('Participant')
   const [selectedParticipant, setSelectedParticipant] = useState(null)
-  const [standsTarget, setStandsTarget] = useState(null) // { participant, type }
+  const [standsTarget, setStandsTarget] = useState(null)
   const [search, setSearch] = useState('')
   const [notifyPendingOpen, setNotifyPendingOpen] = useState(false)
   const [notifyLoading, setNotifyLoading] = useState(false)
+  const [notifyResult, setNotifyResult] = useState(null)
 
   const handleNotifyPending = () => {
     setNotifyLoading(true)
-    setTimeout(() => {
-      setNotifyLoading(false)
-      setNotifyPendingOpen(true)
-    }, 1000)
-    // apiClient
-    //   .post(`URL Mensaje masivo para stands pendientes`)
-    //   .then(() => setNotifyPendingOpen(true))
-    //   .catch((err) => console.error('[Notificación masiva]', err))
-    //   .finally(() => setNotifyLoading(false))
+    messagingClient
+      .post(
+        '/api/send_bulk_template?code=BLtfBxcMcffozm5Qf5O9olVOl7KLSyGOxmngGQxTQhhiAzFuO6ojvA==',
+        {
+          template_name: 'connect_recordatorio_stands',
+          participant_type: 'Participant',
+          language_code: 'es_AR',
+          message:
+            'Los stands que podés visitar en Connect 2026 son los siguientes:\n\n{{sands}}\n\nVisitando estos stands y mostrando tu QR podés completar el Circuito Gaia y participar de sorteos con grandes premios. ¡No te los pierdas!',
+        },
+      )
+      .then((res) => {
+        setNotifyResult(res.data)
+        setNotifyPendingOpen(true)
+      })
+      .catch((err) => {
+        const data = err.response?.data
+        if (data && (data.success_count != null || data.error_count != null)) {
+          setNotifyResult(data)
+          setNotifyPendingOpen(true)
+        } else {
+          console.error('[Notificación masiva]', err)
+        }
+      })
+      .finally(() => setNotifyLoading(false))
   }
 
   useEffect(() => {
@@ -50,17 +67,18 @@ const AsistentesContent = () => {
       .finally(() => setLoading(false))
   }, [])
 
-  const isParticipantTab = activeTab === 'participant'
+  const isParticipantTab = activeTab === 'Participant'
 
   const filtered = participants
-    .filter((p) => p.type === activeTab)
+    .filter((p) => p.participant_type === activeTab)
     .filter((p) => {
       const q = search.toLowerCase()
       return (
         !q ||
         p.name?.toLowerCase().includes(q) ||
         p.last_name?.toLowerCase().includes(q) ||
-        p.email?.toLowerCase().includes(q)
+        p.email?.toLowerCase().includes(q) ||
+        p.phone?.toLowerCase().includes(q)
       )
     })
 
@@ -177,7 +195,15 @@ const AsistentesContent = () => {
         />
       )}
 
-      {notifyPendingOpen && <NotifyPendingModal onClose={() => setNotifyPendingOpen(false)} />}
+      {notifyPendingOpen && (
+        <NotifyPendingModal
+          result={notifyResult}
+          onClose={() => {
+            setNotifyPendingOpen(false)
+            setNotifyResult(null)
+          }}
+        />
+      )}
     </SectionLayout>
   )
 }

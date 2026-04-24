@@ -1,29 +1,41 @@
 import {useState} from 'react'
+import {messagingClient} from '../../../../../lib/api'
 
-const WinnerResultModal = ({winner, productName, onClose}) => {
+const WinnerResultModal = ({winner, product, onClose}) => {
   const [notified, setNotified] = useState(false)
   const [notifying, setNotifying] = useState(false)
 
   const handleNotify = () => {
     setNotifying(true)
-
-    // ─── Para activar la notificación real, descomentar el bloque siguiente ───
-    // apiClient
-    //   .post(`/notify/winner`, {
-    //     winner_id: winner.winner_id,
-    //     product_id: winner.product_id,
-    //   })
-    //   .then(() => setNotified(true))
-    //   .catch((err) => console.error('[Notificar ganador]', err))
-    //   .finally(() => setNotifying(false))
-    // return
-    // ─────────────────────────────────────────────────────────────────────────
-
-    console.log('[Notificar ganador simulado]', winner)
-    setTimeout(() => {
-      setNotified(true)
-      setNotifying(false)
-    }, 800)
+    messagingClient
+      .post(
+        '/api/send_individual_template?code=BLtfBxcMcffozm5Qf5O9olVOl7KLSyGOxmngGQxTQhhiAzFuO6ojvA==',
+        {
+          to: winner.winner_phone,
+          template_name: 'connect_ganador_sorteo',
+          language_code: 'es_AR',
+          message: `!Wow! Regalazo para vos 🎁\nTe ganaste ${product?.name ?? ''}, gentileza de ${product?.brand ?? ''}\nℹ️ Retirá tu premio por la mesa de acreditaciones antes de irte 😎`,
+          components: [
+            {
+              type: 'body',
+              parameters: [
+                {type: 'text', parameter_name: 'regalo', text: product?.name ?? ''},
+                {type: 'text', parameter_name: 'marca', text: product?.brand ?? ''},
+              ],
+            },
+          ],
+        },
+      )
+      .then(() => setNotified(true))
+      .catch((err) => {
+        const data = err.response?.data
+        if (data) {
+          setNotified(true)
+        } else {
+          console.error('[Notificar ganador]', err)
+        }
+      })
+      .finally(() => setNotifying(false))
   }
 
   return (
@@ -53,7 +65,7 @@ const WinnerResultModal = ({winner, productName, onClose}) => {
             {winner.winner_name} {winner.winner_last_name}
           </p>
           <p className="text-sm text-gray-500">
-            Premio: <span className="font-medium text-gray-700">{productName}</span>
+            Premio: <span className="font-medium text-gray-700">{product?.name}</span>
           </p>
 
           {notified ? (

@@ -12,7 +12,7 @@ const Header = () => {
           {/* Fix: lock the robot container width on large screens so it never collapses. */}
           <div className="relative w-full max-w-[480px] h-[200px] sm:h-[250px] lg:w-[480px]">
             <img
-              src="/public/robot_afirmativo.png"
+              src="/robot_afirmativo.png"
               alt=""
               className="absolute top-0 left-0 h-full w-full object-contain z-10"
             />

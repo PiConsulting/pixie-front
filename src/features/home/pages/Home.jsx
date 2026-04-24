@@ -7,7 +7,7 @@ import TabContent from '../components/TabContent'
 // import EventoModal from '../components/tabs/EventoModal'  // Evento fijo: "Connect" — creación deshabilitada
 
 const Home = () => {
-  const [activeTab, setActiveTab] = useState('Asistentes')
+  const [activeTab, setActiveTab] = useState('asistentes')
   // const [showEventoModal, setShowEventoModal] = useState(true)  // Evento fijo: modal de creación deshabilitado
 
   return (

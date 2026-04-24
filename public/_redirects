@@ -1,0 +1,3 @@
+/api/*  https://pixie-app-byb5btd4e7cahpca.eastus2-01.azurewebsites.net/:splat  200
+/messaging/*  https://az-func-whatsapp-notification-b6d7epcyduddh8fd.eastus2-01.azurewebsites.net/:splat  200
+/*  /index.html  200

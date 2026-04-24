@@ -1,5 +1,5 @@
 import {useState} from 'react'
-import apiClient, {EVENT_ID} from '../../../../lib/api'
+import apiClient, {EVENT_ID} from '../../../../../lib/api'
 
 const MensajeModal = ({participant, onClose}) => {
   const [message, setMessage] = useState('')
